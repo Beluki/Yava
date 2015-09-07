@@ -49,6 +49,7 @@
     <Compile Include="FoldersFile\FoldersFileReadError.cs" />
     <Compile Include="Libraries\mINI\mINI.cs" />
     <Compile Include="Program.cs" />
+    <Compile Include="Util.cs" />
     <Compile Include="Yava.cs" />
   </ItemGroup>
   <ItemGroup />

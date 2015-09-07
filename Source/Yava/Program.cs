@@ -4,6 +4,7 @@
 
 
 using System;
+using System.IO;
 using System.Windows.Forms;
 
 
@@ -17,9 +18,15 @@ namespace Yava
         [STAThread]
         private static void Main()
         {
+            // default path for the settings and the folders file:
+            String currentFolder = Util.ApplicationFolder;
+
+            String settingsFilepath = Path.Combine(currentFolder, "Yava.dat");
+            String foldersFilepath = Path.Combine(currentFolder, "Folders.ini");
+
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new Yava());
+            Application.Run(new Yava(settingsFilepath, foldersFilepath));
         }
     }
 }
