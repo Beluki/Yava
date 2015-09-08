@@ -145,7 +145,31 @@ namespace Yava.FoldersFile
                 switch (key.ToLower())
                 {
                     case "path":
-                        currentFolder.Path = value;
+                        String path = value;
+                        
+                        path = Environment.ExpandEnvironmentVariables(value);
+                        path = Path.GetFullPath(path);
+
+                        currentFolder.Path = path;
+                        break;
+
+                    case "extensions":
+                        String[] extensions = value.Split(',');
+
+                        for (int i = 0; i < extensions.Length; i++)
+                        {
+                            // trim spaces and add leading dot where needed:
+                            String extension = extensions[i].Trim();
+
+                            if (!extension.StartsWith("."))
+                            {
+                                extension = "." + extension;
+                            }
+
+                            extensions[i] = extension;
+                        }
+
+                        currentFolder.Extensions = new HashSet<String>(extensions);
                         break;
 
                     default:

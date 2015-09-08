@@ -5,7 +5,9 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
+using System.IO;
 using System.Windows.Forms;
 
 using Yava.Controls;
@@ -59,6 +61,7 @@ namespace Yava
             filesListView.Dock = DockStyle.Fill;
             filesListView.Font = new Font("Verdana", 9);
             filesListView.FullRowSelect = true;
+            filesListView.ShowItemToolTips = true;
             filesListView.View = View.Details;
             filesListView.Width = 400;
 
@@ -77,20 +80,27 @@ namespace Yava
             this.foldersFilepath = foldersFilepath;
             this.foldersFileReader = new FoldersFileReader();
 
+            // load folders and resize:
             LoadFolders();
-            ResizeListViewColumns();
+            ListViewsResize();
+
+            // wire listviews events:
+            foldersListView.ItemSelectionChanged += OnFoldersListViewItemSelectionChanged;
         }
 
         ///
-        /// Helper listview functions:
+        /// Listviews:
         ///
 
         /// <summary>
         /// Resize the files and folder ListView first column according
         /// to their content.
         /// </summary>
-        private void ResizeListViewColumns()
+        private void ListViewsResize()
         {
+            foldersListView.BeginUpdate();
+            filesListView.BeginUpdate();
+
             foldersListView.Columns[0].AutoResize(ColumnHeaderAutoResizeStyle.None);
             foldersListView.Columns[0].AutoResize(ColumnHeaderAutoResizeStyle.ColumnContent);
 
@@ -100,18 +110,43 @@ namespace Yava
             // ensure that the column headers are visible:
             foldersListView.Columns[0].Width = Math.Max(foldersListView.Columns[0].Width, 150);
             filesListView.Columns[0].Width = Math.Max(filesListView.Columns[0].Width, 150);
+
+            foldersListView.EndUpdate();
+            filesListView.EndUpdate();
         }
 
         /// <summary>
         /// Clear and disable both the folders and the files listviews.
         /// </summary>
-        private void DisableListViews()
+        private void ListViewsDisable()
         {
             foldersListView.Items.Clear();
             filesListView.Items.Clear();
 
             foldersListView.Enabled = false;
             filesListView.Enabled = false;
+        }
+
+        ///
+        /// Folders file:
+        ///
+
+        /// <summary>
+        /// Open the folders file with the default program
+        /// associated to the extension.
+        /// </summary>
+        private void FoldersFileOpen()
+        {
+            try
+            {
+                Process.Start(foldersFilepath);
+            }
+            catch (Exception exception)
+            {
+                String text = exception.Message;
+                String caption = "Error openning folders file";
+                MessageBox.Show(text, caption);
+            }
         }
 
         ///
@@ -122,16 +157,27 @@ namespace Yava
         /// Open the folders file and parse the content
         /// adding each folder to the folders listview.
         /// </summary>
-        private Boolean LoadFolders()
+        private void LoadFolders()
         {
-            Boolean success = false;
-            List<Folder> folders = new List<Folder>();
+            List<ListViewItem> items = new List<ListViewItem>();
 
             try
             {
+                List<Folder> folders = new List<Folder>();
                 foldersFileReader.Read(foldersFilepath, folders);
-                success = true;
+
+                foreach (Folder folder in folders)
+                {
+                    ListViewItem item = new ListViewItem();
+
+                    item.Tag = folder;
+                    item.Text = folder.Name;
+                    item.ToolTipText = folder.Path;
+
+                    items.Add(item);
+                }
             }
+
             // syntax or parsing error
             // show details and ask the user to edit:
             catch (FoldersFileReadError exception)
@@ -151,10 +197,12 @@ namespace Yava
                 String caption = "Error reading folders file";
                 if (Util.MessageBoxYesNo(text, caption))
                 {
-
+                    FoldersFileOpen();
                 }
             }
-            // io error:
+
+            // io error
+            // show the exception message:
             catch (Exception exception)
             {
                 String caption = "Error opening folders file";
@@ -166,24 +214,52 @@ namespace Yava
             // clear previous content and update the listview:
             foldersListView.BeginUpdate();
             foldersListView.Items.Clear();
+            foldersListView.Items.AddRange(items.ToArray());
+            foldersListView.EndUpdate();
+        }
 
-            // ok? add all the folders:
-            if (success)
+        /// <summary>
+        /// Populate the files listview using the selected
+        /// folders files.
+        /// </summary>
+        private void LoadFiles()
+        {
+            List<ListViewItem> items = new List<ListViewItem>();
+ 
+            try
             {
-                foreach (Folder folder in folders)
+                foreach (ListViewItem selectedItem in foldersListView.SelectedItems)
                 {
-                    ListViewItem item = new ListViewItem();
+                    Folder folder = selectedItem.Tag as Folder;
 
-                    item.Tag = folder;
-                    item.Text = folder.Name;
-                    item.ToolTipText = folder.Path;
+                    foreach (String filepath in folder.GetFiles())
+                    {
+                        ListViewItem item = new ListViewItem();
 
-                    foldersListView.Items.Add(item);
+                        item.Text = Path.GetFileName(filepath);
+                        item.Tag = filepath;
+                        item.ToolTipText = filepath;
+
+                        items.Add(item);
+                    }
                 }
             }
+            
+            // io error
+            // show the exception message:
+            catch (Exception exception)
+            {
+                String caption = "Error loading folder files";
+                String text = exception.Message;
 
-            foldersListView.EndUpdate();
-            return success;
+                MessageBox.Show(text, caption, MessageBoxButtons.OK);
+            }
+
+            // clear previous content and update the listview:
+            filesListView.BeginUpdate();
+            filesListView.Items.Clear();
+            filesListView.Items.AddRange(items.ToArray());
+            filesListView.EndUpdate();
         }
 
         ///
@@ -195,7 +271,7 @@ namespace Yava
         /// </summary>
         private void OnResizeEnd(Object sender, EventArgs e)
         {
-            ResizeListViewColumns();
+            ListViewsResize();
         }
 
         /// <summary>
@@ -203,7 +279,20 @@ namespace Yava
         /// </summary>
         private void OnSplitterMoved(Object sender, EventArgs e)
         {
-            ResizeListViewColumns();
+            ListViewsResize();
+        }
+
+        ///
+        /// Events: listviews
+        ///
+
+        /// <summary>
+        /// When the folder selection changes, load the appropriate files list.
+        /// </summary>
+        private void OnFoldersListViewItemSelectionChanged(Object sender, EventArgs e)
+        {
+            LoadFiles();
+            ListViewsResize();
         }
     }
 }
