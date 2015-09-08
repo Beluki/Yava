@@ -28,7 +28,7 @@ namespace Yava
         // folders:
         private readonly String foldersFilepath;
         private readonly FoldersFileReader foldersFileReader;
-        private readonly Dictionary<String, String> lastFocusedFoldersFile;
+        private readonly Dictionary<String, String> lastSelectedFoldersFile;
 
         /// <summary>
         /// Yava implementation.
@@ -52,6 +52,7 @@ namespace Yava
             foldersListView.Columns.Add("Folders");
             foldersListView.Dock = DockStyle.Left;
             foldersListView.Font = new Font("Verdana", 9);
+            foldersListView.HideSelection = false;
             foldersListView.MultiSelect = true;
             foldersListView.FullRowSelect = true;
             foldersListView.ShowItemToolTips = true;
@@ -62,6 +63,7 @@ namespace Yava
             filesListView.Columns.Add("Files");
             filesListView.Dock = DockStyle.Fill;
             filesListView.Font = new Font("Verdana", 9);
+            filesListView.HideSelection = false;
             filesListView.FullRowSelect = true;
             filesListView.MultiSelect = false;
             filesListView.ShowItemToolTips = true;
@@ -82,7 +84,7 @@ namespace Yava
             // folders:
             this.foldersFilepath = foldersFilepath;
             this.foldersFileReader = new FoldersFileReader();
-            this.lastFocusedFoldersFile = new Dictionary<String, String>();
+            this.lastSelectedFoldersFile = new Dictionary<String, String>();
 
             // load folders and resize:
             LoadFolders();
@@ -121,27 +123,34 @@ namespace Yava
         /// 
 
         /// <summary>
-        /// Remember the current folder focused file.
-        /// This is used in combination with ListViewFilesFocusLastFocusedFile()
-        /// to set the focused file after a folder change.
+        /// Remember the current folder selected file.
+        /// This is used in combination with ListViewFilesSelectLastSelectedFile()
+        /// to set the selected file after a folder change.
         /// </summary>
-        private void ListViewFilesRememberFocusedFile()
+        private void ListViewFilesRememberSelectedFile()
         {
             // we remember the last file focused for each single folder
             // but not for multiple selections:
-            if ((foldersListView.SelectedItems.Count == 1) && (filesListView.FocusedItem != null))
+            if (foldersListView.SelectedItems.Count == 1) 
             {
                 String folderpath = (foldersListView.SelectedItems[0].Tag as Folder).Path;
-                String filepath = filesListView.FocusedItem.Tag as String;
 
-                lastFocusedFoldersFile[folderpath] = filepath;
+                if (filesListView.SelectedItems.Count == 1)
+                {
+                    String filepath = filesListView.SelectedItems[0].Tag as String;
+                    lastSelectedFoldersFile[folderpath] = filepath;
+                }
+                else
+                {
+                    lastSelectedFoldersFile.Remove(folderpath);
+                }
             }
         }
 
         /// <summary>
-        /// Try to focus the file that was last focused on the files listview.
+        /// Try to select the file that was last selected on the files listview.
         /// </summary>
-        private void ListViewFilesFocusLastFocusedFile()
+        private void ListViewFilesSelectLastSelectedFile()
         {
             // we remember the last file focused for each single folder
             // but not for multiple selections:
@@ -149,9 +158,9 @@ namespace Yava
             {
                 String folderpath = (foldersListView.SelectedItems[0].Tag as Folder).Path;
 
-                if (lastFocusedFoldersFile.ContainsKey(folderpath))
+                if (lastSelectedFoldersFile.ContainsKey(folderpath))
                 {
-                    String filepath = lastFocusedFoldersFile[folderpath];
+                    String filepath = lastSelectedFoldersFile[folderpath];
 
                     // find our item:
                     // (there should be a more efficient method to do this ?)
@@ -340,7 +349,7 @@ namespace Yava
         {
             LoadFiles();
             ListViewsResize();
-            ListViewFilesFocusLastFocusedFile();
+            ListViewFilesSelectLastSelectedFile();
         }
 
         /// <summary>
@@ -348,7 +357,7 @@ namespace Yava
         /// </summary>
         private void OnFilesListViewLostFocus(Object sender, EventArgs e)
         {
-            ListViewFilesRememberFocusedFile();
+            ListViewFilesRememberSelectedFile();
         }
     }
 }
