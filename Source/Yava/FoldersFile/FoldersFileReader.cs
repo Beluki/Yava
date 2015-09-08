@@ -136,6 +136,49 @@ namespace Yava.FoldersFile
         }
 
         /// <summary>
+        /// Try to parse a folder path.
+        /// Relative paths are converted to absolute.
+        /// Environment variables are expanded (e.g. %APPDATA%).
+        /// </summary>
+        /// <param name="value">Path to read.</param>
+        private String ReadFolderPath(String value)
+        {
+            try
+            {
+                return Path.GetFullPath(Environment.ExpandEnvironmentVariables(value));
+            }
+            catch (Exception e)
+            {
+                throw ReadError(e.Message);
+            }
+        }
+
+        /// <summary>
+        /// Try to parse folder extensions.
+        /// Spaces are trimmed around each extensions.
+        /// Leading dots are added where needed.
+        /// </summary>
+        /// <param name="value">Comma separated extensions.</param>
+        private HashSet<String> ReadFolderExtensions(String value)
+        {
+            String[] extensions = value.Split(',');
+
+            for (int i = 0; i < extensions.Length; i++)
+            {
+                String extension = extensions[i].Trim();
+
+                if (!extension.StartsWith("."))
+                {
+                    extension = "." + extension;
+                }
+
+                extensions[i] = extension;
+            }
+
+            return new HashSet<String>(extensions);
+        }
+
+        /// <summary>
         /// Set key=value pairs as options to the current folder.
         /// </summary>
         protected override void OnKeyValue(String key, String value)
@@ -145,31 +188,11 @@ namespace Yava.FoldersFile
                 switch (key.ToLower())
                 {
                     case "path":
-                        String path = value;
-                        
-                        path = Environment.ExpandEnvironmentVariables(value);
-                        path = Path.GetFullPath(path);
-
-                        currentFolder.Path = path;
+                        currentFolder.Path = ReadFolderPath(value);
                         break;
 
                     case "extensions":
-                        String[] extensions = value.Split(',');
-
-                        for (int i = 0; i < extensions.Length; i++)
-                        {
-                            // trim spaces and add leading dot where needed:
-                            String extension = extensions[i].Trim();
-
-                            if (!extension.StartsWith("."))
-                            {
-                                extension = "." + extension;
-                            }
-
-                            extensions[i] = extension;
-                        }
-
-                        currentFolder.Extensions = new HashSet<String>(extensions);
+                        currentFolder.Extensions = ReadFolderExtensions(value);
                         break;
 
                     default:

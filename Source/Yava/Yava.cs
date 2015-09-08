@@ -28,6 +28,7 @@ namespace Yava
         // folders:
         private readonly String foldersFilepath;
         private readonly FoldersFileReader foldersFileReader;
+        private readonly Dictionary<String, String> lastFocusedFoldersFile;
 
         /// <summary>
         /// Yava implementation.
@@ -51,6 +52,7 @@ namespace Yava
             foldersListView.Columns.Add("Folders");
             foldersListView.Dock = DockStyle.Left;
             foldersListView.Font = new Font("Verdana", 9);
+            foldersListView.MultiSelect = true;
             foldersListView.FullRowSelect = true;
             foldersListView.ShowItemToolTips = true;
             foldersListView.View = View.Details;
@@ -61,6 +63,7 @@ namespace Yava
             filesListView.Dock = DockStyle.Fill;
             filesListView.Font = new Font("Verdana", 9);
             filesListView.FullRowSelect = true;
+            filesListView.MultiSelect = false;
             filesListView.ShowItemToolTips = true;
             filesListView.View = View.Details;
             filesListView.Width = 400;
@@ -79,6 +82,7 @@ namespace Yava
             // folders:
             this.foldersFilepath = foldersFilepath;
             this.foldersFileReader = new FoldersFileReader();
+            this.lastFocusedFoldersFile = new Dictionary<String, String>();
 
             // load folders and resize:
             LoadFolders();
@@ -86,10 +90,11 @@ namespace Yava
 
             // wire listviews events:
             foldersListView.ItemSelectionChanged += OnFoldersListViewItemSelectionChanged;
+            filesListView.LostFocus += OnFilesListViewLostFocus;
         }
 
         ///
-        /// Listviews:
+        /// Updating listviews
         ///
 
         /// <summary>
@@ -99,36 +104,73 @@ namespace Yava
         private void ListViewsResize()
         {
             foldersListView.BeginUpdate();
-            filesListView.BeginUpdate();
-
             foldersListView.Columns[0].AutoResize(ColumnHeaderAutoResizeStyle.None);
             foldersListView.Columns[0].AutoResize(ColumnHeaderAutoResizeStyle.ColumnContent);
+            foldersListView.Columns[0].Width = Math.Max(foldersListView.Columns[0].Width, 150);
+            foldersListView.EndUpdate();
 
+            filesListView.BeginUpdate();            
             filesListView.Columns[0].AutoResize(ColumnHeaderAutoResizeStyle.None);
             filesListView.Columns[0].AutoResize(ColumnHeaderAutoResizeStyle.ColumnContent);
-
-            // ensure that the column headers are visible:
-            foldersListView.Columns[0].Width = Math.Max(foldersListView.Columns[0].Width, 150);
-            filesListView.Columns[0].Width = Math.Max(filesListView.Columns[0].Width, 150);
-
-            foldersListView.EndUpdate();
+            filesListView.Columns[0].Width = Math.Max(filesListView.Columns[0].Width, 150);           
             filesListView.EndUpdate();
         }
 
-        /// <summary>
-        /// Clear and disable both the folders and the files listviews.
-        /// </summary>
-        private void ListViewsDisable()
-        {
-            foldersListView.Items.Clear();
-            filesListView.Items.Clear();
+        ///
+        /// Focusing listview items
+        /// 
 
-            foldersListView.Enabled = false;
-            filesListView.Enabled = false;
+        /// <summary>
+        /// Remember the current folder focused file.
+        /// This is used in combination with ListViewFilesFocusLastFocusedFile()
+        /// to set the focused file after a folder change.
+        /// </summary>
+        private void ListViewFilesRememberFocusedFile()
+        {
+            // we remember the last file focused for each single folder
+            // but not for multiple selections:
+            if ((foldersListView.SelectedItems.Count == 1) && (filesListView.FocusedItem != null))
+            {
+                String folderpath = (foldersListView.SelectedItems[0].Tag as Folder).Path;
+                String filepath = filesListView.FocusedItem.Tag as String;
+
+                lastFocusedFoldersFile[folderpath] = filepath;
+            }
+        }
+
+        /// <summary>
+        /// Try to focus the file that was last focused on the files listview.
+        /// </summary>
+        private void ListViewFilesFocusLastFocusedFile()
+        {
+            // we remember the last file focused for each single folder
+            // but not for multiple selections:
+            if (foldersListView.SelectedItems.Count == 1)
+            {
+                String folderpath = (foldersListView.SelectedItems[0].Tag as Folder).Path;
+
+                if (lastFocusedFoldersFile.ContainsKey(folderpath))
+                {
+                    String filepath = lastFocusedFoldersFile[folderpath];
+
+                    // find our item:
+                    // (there should be a more efficient method to do this ?)
+                    foreach (ListViewItem item in filesListView.Items)
+                    {
+                        if ((item.Tag as String).Equals(filepath))
+                        {
+                            filesListView.EnsureVisible(item.Index);
+                            item.Focused = true;
+                            item.Selected = true;
+                            break;
+                        }
+                    }
+                }
+            }
         }
 
         ///
-        /// Folders file:
+        /// Executing files
         ///
 
         /// <summary>
@@ -150,7 +192,7 @@ namespace Yava
         }
 
         ///
-        /// Loading content:
+        /// Loading folders and files into the listviews
         ///
 
         /// <summary>
@@ -159,23 +201,11 @@ namespace Yava
         /// </summary>
         private void LoadFolders()
         {
-            List<ListViewItem> items = new List<ListViewItem>();
+            List<Folder> folders = new List<Folder>();
 
             try
             {
-                List<Folder> folders = new List<Folder>();
                 foldersFileReader.Read(foldersFilepath, folders);
-
-                foreach (Folder folder in folders)
-                {
-                    ListViewItem item = new ListViewItem();
-
-                    item.Tag = folder;
-                    item.Text = folder.Name;
-                    item.ToolTipText = folder.Path;
-
-                    items.Add(item);
-                }
             }
 
             // syntax or parsing error
@@ -211,10 +241,26 @@ namespace Yava
                 MessageBox.Show(text, caption, MessageBoxButtons.OK);
             }
 
+            // create the listview items:
+            ListViewItem[] items = new ListViewItem[folders.Count];
+
+            int index = 0;
+            foreach (Folder folder in folders)
+            {
+                ListViewItem item = new ListViewItem();
+
+                item.Tag = folder;
+                item.Text = folder.Name;
+                item.ToolTipText = folder.Path;
+
+                items[index] = item;
+                index++;
+            }
+
             // clear previous content and update the listview:
             foldersListView.BeginUpdate();
             foldersListView.Items.Clear();
-            foldersListView.Items.AddRange(items.ToArray());
+            foldersListView.Items.AddRange(items);
             foldersListView.EndUpdate();
         }
 
@@ -287,12 +333,22 @@ namespace Yava
         ///
 
         /// <summary>
-        /// When the folder selection changes, load the appropriate files list.
+        /// When the folder selection changes, load the appropriate files list
+        /// and try to focus the last known focused file.
         /// </summary>
-        private void OnFoldersListViewItemSelectionChanged(Object sender, EventArgs e)
+        private void OnFoldersListViewItemSelectionChanged(Object sender, ListViewItemSelectionChangedEventArgs e)
         {
             LoadFiles();
             ListViewsResize();
+            ListViewFilesFocusLastFocusedFile();
+        }
+
+        /// <summary>
+        /// When the files listview loses focus, remember the last focused file.
+        /// </summary>
+        private void OnFilesListViewLostFocus(Object sender, EventArgs e)
+        {
+            ListViewFilesRememberFocusedFile();
         }
     }
 }
