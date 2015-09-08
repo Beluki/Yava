@@ -119,7 +119,7 @@ namespace Yava
         }
 
         ///
-        /// Focusing listview items
+        /// Selecting listview items
         /// 
 
         /// <summary>
@@ -129,7 +129,7 @@ namespace Yava
         /// </summary>
         private void ListViewFilesRememberSelectedFile()
         {
-            // we remember the last file focused for each single folder
+            // we remember the last selected file for each single folder
             // but not for multiple selections:
             if (foldersListView.SelectedItems.Count == 1) 
             {
@@ -152,7 +152,7 @@ namespace Yava
         /// </summary>
         private void ListViewFilesSelectLastSelectedFile()
         {
-            // we remember the last file focused for each single folder
+            // we remember the last selected file for each single folder
             // but not for multiple selections:
             if (foldersListView.SelectedItems.Count == 1)
             {
@@ -163,7 +163,7 @@ namespace Yava
                     String filepath = lastSelectedFoldersFile[folderpath];
 
                     // find our item:
-                    // (there should be a more efficient method to do this ?)
+                    // (there should be a more efficient method to do this)
                     foreach (ListViewItem item in filesListView.Items)
                     {
                         if ((item.Tag as String).Equals(filepath))
@@ -343,7 +343,7 @@ namespace Yava
 
         /// <summary>
         /// When the folder selection changes, load the appropriate files list
-        /// and try to focus the last known focused file.
+        /// and try to select the last known selected file.
         /// </summary>
         private void OnFoldersListViewItemSelectionChanged(Object sender, ListViewItemSelectionChangedEventArgs e)
         {
@@ -353,7 +353,7 @@ namespace Yava
         }
 
         /// <summary>
-        /// When the files listview loses focus, remember the last focused file.
+        /// When the files listview loses focus, remember the last selected file.
         /// </summary>
         private void OnFilesListViewLostFocus(Object sender, EventArgs e)
         {
