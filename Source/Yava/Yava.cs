@@ -142,6 +142,8 @@ namespace Yava
                 }
                 else
                 {
+                    // note: Dictionary.Remove(key) does nothing when the key is not found
+                    // no need for additional checks:
                     lastSelectedFoldersFile.Remove(folderpath);
                 }
             }
