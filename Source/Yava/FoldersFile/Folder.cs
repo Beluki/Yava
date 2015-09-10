@@ -46,17 +46,14 @@ namespace Yava.FoldersFile
         /// </summary>
         public IEnumerable<FolderFile> GetFiles()
         {
-            List<FolderFile> result = new List<FolderFile>();
-
             // no extensions specified:
             if (Extensions.Count == 0)
             {
                 foreach (String filepath in Directory.EnumerateFiles(Path))
                 {
-                    result.Add(new FolderFile(this, filepath));
-                } 
+                    yield return new FolderFile(this, filepath);
+                }
             }
-
             // filter by the specified extensions:
             else
             {
@@ -65,12 +62,10 @@ namespace Yava.FoldersFile
                     String extension = System.IO.Path.GetExtension(filepath);
                     if (Extensions.Contains(extension))
                     {
-                        result.Add(new FolderFile(this, filepath));
+                        yield return new FolderFile(this, filepath);
                     }
                 }
             }
-
-            return result;
         }
     }
 }

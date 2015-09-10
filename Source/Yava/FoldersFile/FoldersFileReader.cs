@@ -139,7 +139,7 @@ namespace Yava.FoldersFile
         }
 
         /// <summary>
-        /// On a new section, add  the current folder to the collection
+        /// On a new section, add the current folder to the collection
         /// and create the next one.
         /// </summary>
         protected override void OnSection(String section)
@@ -160,11 +160,11 @@ namespace Yava.FoldersFile
         {
             try
             {
-                return Path.GetFullPath(Environment.ExpandEnvironmentVariables(value));
+                return Util.ToAbsoluteExpandedPath(value);
             }
-            catch (Exception e)
+            catch (Exception exception)
             {
-                throw ReadError(e.Message);
+                throw ReadError(exception.Message);
             }
         }
 

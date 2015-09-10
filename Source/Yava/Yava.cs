@@ -81,7 +81,7 @@ namespace Yava
             Controls.Add(filesListView);
             Controls.Add(splitter);
             Controls.Add(foldersListView);
-            
+
             // settings:
             this.settingsFilepath = settingsFilepath;
 
@@ -93,9 +93,6 @@ namespace Yava
             this.lastSelectedFolderName = null;
             this.folderNameToLastSelectedFile = new Dictionary<String, FolderFile>();
 
-            // load content:
-            LoadFolders();
-
             // wire events - listviews:
             foldersListView.ItemSelectionChanged += OnFoldersListViewItemSelectionChanged;
             filesListView.ItemSelectionChanged += OnFilesListViewItemSelectionChanged;
@@ -103,6 +100,9 @@ namespace Yava
             // wire events - keyboard:
             foldersListView.KeyDown += OnFoldersListViewKeyDown;
             filesListView.KeyDown += OnFilesListViewKeyDown;
+
+            // load content:
+            LoadContent();
         }
 
         ///
@@ -110,21 +110,26 @@ namespace Yava
         ///
 
         /// <summary>
-        /// Resize the files and folder ListView first column according
-        /// to their content.
+        /// Resize the folder ListView first column according to the content.
         /// </summary>
-        private void ListViewsResize()
+        private void ListViewFoldersResize()
         {
             foldersListView.BeginUpdate();
             foldersListView.Columns[0].AutoResize(ColumnHeaderAutoResizeStyle.None);
             foldersListView.Columns[0].AutoResize(ColumnHeaderAutoResizeStyle.ColumnContent);
             foldersListView.Columns[0].Width = Math.Max(foldersListView.Columns[0].Width, 150);
             foldersListView.EndUpdate();
+        }
 
-            filesListView.BeginUpdate();            
+        /// <summary>
+        /// Resize the files ListView first column according to the content.
+        /// </summary>
+        private void ListViewFilesResize()
+        {
+            filesListView.BeginUpdate();
             filesListView.Columns[0].AutoResize(ColumnHeaderAutoResizeStyle.None);
             filesListView.Columns[0].AutoResize(ColumnHeaderAutoResizeStyle.ColumnContent);
-            filesListView.Columns[0].Width = Math.Max(filesListView.Columns[0].Width, 150);           
+            filesListView.Columns[0].Width = Math.Max(filesListView.Columns[0].Width, 150);
             filesListView.EndUpdate();
         }
 
@@ -133,8 +138,8 @@ namespace Yava
         /// 
 
         /// <summary>
-        /// Remember the current selected folder, by name.
-        /// This is used in combination with ListViewFoldersSelectLastSelectedFolder()
+        /// Remember the current selected folder.
+        /// Used in combination with ListViewFoldersSelectLastSelectedFolder()
         /// to set the selected folder after reloading the listview.
         /// </summary>
         private void ListViewFoldersRememberSelectedFolder()
@@ -162,14 +167,20 @@ namespace Yava
         {
             if (lastSelectedFolderName != null)
             {
-                // find our item:
+                // find the item:
                 foreach (ListViewItem item in foldersListView.Items)
                 {
-                    if ((item.Tag as Folder).Name.Equals(lastSelectedFolderName))
+                    Folder test = item.Tag as Folder;
+                    if (test.Name.Equals(lastSelectedFolderName))
                     {
-                        foldersListView.EnsureVisible(item.Index);
-                        item.Focused = true;
-                        item.Selected = true;
+                        // do not trigger the selection event:
+                        foldersListView.ItemSelectionChanged -= OnFoldersListViewItemSelectionChanged;
+                        {
+                            foldersListView.EnsureVisible(item.Index);
+                            item.Focused = true;
+                            item.Selected = true;
+                        }
+                        foldersListView.ItemSelectionChanged += OnFoldersListViewItemSelectionChanged;
                         break;
                     }
                 }
@@ -178,8 +189,8 @@ namespace Yava
 
         /// <summary>
         /// Remember the current folder selected file.
-        /// This is used in combination with ListViewFilesSelectLastSelectedFile()
-        /// to set the selected file after a folder change or after reloading.
+        /// Used in combination with ListViewFilesSelectLastSelectedFile()
+        /// to set the selected file after reloading the listview.
         /// </summary>
         private void ListViewFilesRememberSelectedFile()
         {
@@ -197,8 +208,7 @@ namespace Yava
                 }
                 else
                 {
-                    // note: Dictionary.Remove(key) does nothing when the key is not found
-                    // no need for additional checks:
+                    // note: Dictionary.Remove(key) does nothing when the key is not found:
                     folderNameToLastSelectedFile.Remove(foldername);
                 }
             }
@@ -221,15 +231,20 @@ namespace Yava
                     FolderFile file = folderNameToLastSelectedFile[foldername];
                     String filepath = file.Path;
 
-                    // find our item:
-                    // (there should be a more efficient method to do this)
+                    // find the item:
                     foreach (ListViewItem item in filesListView.Items)
                     {
-                        if ((item.Tag as FolderFile).Path.Equals(filepath))
+                        FolderFile test = item.Tag as FolderFile;
+                        if (test.Path.Equals(filepath))
                         {
-                            filesListView.EnsureVisible(item.Index);
-                            item.Focused = true;
-                            item.Selected = true;
+                            // do not trigger the selection event:
+                            filesListView.ItemSelectionChanged -= OnFilesListViewItemSelectionChanged;
+                            {
+                                filesListView.EnsureVisible(item.Index);
+                                item.Focused = true;
+                                item.Selected = true;
+                            }
+                            filesListView.ItemSelectionChanged += OnFilesListViewItemSelectionChanged;
                             break;
                         }
                     }
@@ -266,14 +281,17 @@ namespace Yava
         /// <summary>
         /// Open the folders file and parse the content
         /// adding each folder to the folders listview.
+        /// On errors, show a messagebox with details.
         /// </summary>
         private void LoadFolders()
         {
             List<Folder> folders = new List<Folder>();
+            Boolean success = false;
 
             try
             {
                 foldersFileReader.Read(foldersFilepath, folders);
+                success = true;
             }
 
             // syntax or parsing error
@@ -309,38 +327,45 @@ namespace Yava
                 MessageBox.Show(text, caption, MessageBoxButtons.OK);
             }
 
-            // create the listview items:
-            ListViewItem[] items = new ListViewItem[folders.Count];
-
-            int index = 0;
-            foreach (Folder folder in folders)
-            {
-                ListViewItem item = new ListViewItem();
-
-                item.Tag = folder;
-                item.Text = folder.Name;
-                item.ToolTipText = folder.Path;
-
-                items[index] = item;
-                index++;
-            }
-
-            // clear previous content and update the listview:
+            // clear previous content:
             foldersListView.BeginUpdate();
             foldersListView.Items.Clear();
-            foldersListView.Items.AddRange(items);
+
+            // add the folders when needed:
+            if (success)
+            {
+                ListViewItem[] items = new ListViewItem[folders.Count];
+
+                Int32 index = 0;
+                foreach (Folder folder in folders)
+                {
+                    ListViewItem item = new ListViewItem();
+
+                    item.Tag = folder;
+                    item.Text = folder.Name;
+                    item.ToolTipText = folder.Path;
+
+                    items[index] = item;
+                    index++;
+                }
+
+                foldersListView.Items.AddRange(items);
+            }
+
+            // done:
             foldersListView.EndUpdate();
-            ListViewsResize();
+            ListViewFoldersResize();
         }
 
         /// <summary>
-        /// Populate the files listview using the selected
-        /// folders files.
+        /// Populate the files listview using the selected folders files.
+        /// On errors, show a messagebox with details.
         /// </summary>
         private void LoadFiles()
         {
             List<ListViewItem> items = new List<ListViewItem>();
- 
+            Boolean success = false;
+
             try
             {
                 foreach (ListViewItem selectedItem in foldersListView.SelectedItems)
@@ -357,8 +382,10 @@ namespace Yava
                         items.Add(item);
                     }
                 }
+
+                success = true;
             }
-            
+
             // io error
             // show the exception message:
             catch (Exception exception)
@@ -369,12 +396,32 @@ namespace Yava
                 MessageBox.Show(text, caption, MessageBoxButtons.OK);
             }
 
-            // clear previous content and update the listview:
+            // clear previous content:
             filesListView.BeginUpdate();
             filesListView.Items.Clear();
-            filesListView.Items.AddRange(items.ToArray());
+
+            // add the files when needed:
+            if (success)
+            {
+                filesListView.Items.AddRange(items.ToArray());
+            }
+
+            // done:
             filesListView.EndUpdate();
-            ListViewsResize();
+            ListViewFilesResize();
+        }
+
+        /// <summary>
+        /// Loads both folders and files, selecting the last
+        /// selected ones when possible.
+        /// </summary>
+        public void LoadContent()
+        {
+            LoadFolders();
+            ListViewFoldersSelectLastSelectedFolder();
+            
+            LoadFiles();
+            ListViewFilesSelectLastSelectedFile();
         }
 
         ///
@@ -382,19 +429,21 @@ namespace Yava
         ///
 
         /// <summary>
-        /// When the form is resized, auto-resize the ListViews column.
+        /// When the form is resized, auto-resize the listviews.
         /// </summary>
         private void OnResizeEnd(Object sender, EventArgs e)
         {
-            ListViewsResize();
+            ListViewFoldersResize();
+            ListViewFilesResize();
         }
 
         /// <summary>
-        /// When the spliiter is moved, auto-resize the ListViews column.
+        /// When the spliiter is moved, auto-resize the listviews.
         /// </summary>
         private void OnSplitterMoved(Object sender, EventArgs e)
         {
-            ListViewsResize();
+            ListViewFoldersResize();
+            ListViewFilesResize();
         }
 
         ///
@@ -409,6 +458,7 @@ namespace Yava
         {
             LoadFiles();
             ListViewFilesSelectLastSelectedFile();
+            ListViewFoldersRememberSelectedFolder();
         }
 
         /// <summary>
@@ -432,9 +482,7 @@ namespace Yava
             switch (e.KeyData)
             {
                 case Keys.F5:
-                    ListViewFoldersRememberSelectedFolder();
-                    LoadFolders();
-                    ListViewFoldersSelectLastSelectedFolder();
+                    LoadContent();
                     foldersListView.Focus();
                     e.Handled = true;
                     break;
@@ -449,9 +497,7 @@ namespace Yava
             switch (e.KeyData)
             {
                 case Keys.F5:
-                    ListViewFoldersRememberSelectedFolder();
-                    LoadFolders();
-                    ListViewFoldersSelectLastSelectedFolder();
+                    LoadContent();
                     filesListView.Focus();
                     e.Handled = true;
                     break;

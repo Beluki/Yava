@@ -29,7 +29,7 @@ namespace Yava.FoldersFile
         /// <summary>
         /// A folder specification.
         /// Used inside FoldersFileReader to gather the data for each folder.
-        /// Unlike the Folder class, this one initializes everything to null and is mutable.
+        /// Unlike the Folder class this one initializes everything to null and has mutable fields.
         /// </summary>
         public FoldersFileReaderFolder()
         {
