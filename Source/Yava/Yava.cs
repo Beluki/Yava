@@ -13,6 +13,7 @@ using System.Windows.Forms;
 using Yava.Controls;
 using Yava.FoldersFile;
 
+
 namespace Yava
 {
     [System.ComponentModel.DesignerCategory("")]
@@ -28,7 +29,7 @@ namespace Yava
         // folders:
         private readonly String foldersFilepath;
         private readonly FoldersFileReader foldersFileReader;
-        private readonly Dictionary<String, String> lastSelectedFoldersFile;
+        private readonly Dictionary<String, FolderFile> lastSelectedFoldersFile;
 
         /// <summary>
         /// Yava implementation.
@@ -45,7 +46,7 @@ namespace Yava
             DoubleBuffered = true;
             MinimumSize = new Size(640, 480);
             ResizeEnd += OnResizeEnd;
-            Text = "Yava launcher";
+            Text = "Yava Launcher";
 
             // gui components:
             foldersListView = new DoubleBufferedListView();
@@ -77,14 +78,14 @@ namespace Yava
             Controls.Add(filesListView);
             Controls.Add(splitter);
             Controls.Add(foldersListView);
-
+            
             // settings:
             this.settingsFilepath = settingsFilepath;
 
             // folders:
             this.foldersFilepath = foldersFilepath;
             this.foldersFileReader = new FoldersFileReader();
-            this.lastSelectedFoldersFile = new Dictionary<String, String>();
+            this.lastSelectedFoldersFile = new Dictionary<String, FolderFile>();
 
             // load folders and resize:
             LoadFolders();
@@ -131,20 +132,21 @@ namespace Yava
         {
             // we remember the last selected file for each single folder
             // but not for multiple selections:
-            if (foldersListView.SelectedItems.Count == 1) 
+            if (foldersListView.SelectedItems.Count == 1)
             {
-                String folderpath = (foldersListView.SelectedItems[0].Tag as Folder).Path;
+                Folder folder = foldersListView.SelectedItems[0].Tag as Folder;
+                String foldername = folder.Name;
 
                 if (filesListView.SelectedItems.Count == 1)
                 {
-                    String filepath = filesListView.SelectedItems[0].Tag as String;
-                    lastSelectedFoldersFile[folderpath] = filepath;
+                    FolderFile file = filesListView.SelectedItems[0].Tag as FolderFile;
+                    lastSelectedFoldersFile[foldername] = file;
                 }
                 else
                 {
                     // note: Dictionary.Remove(key) does nothing when the key is not found
                     // no need for additional checks:
-                    lastSelectedFoldersFile.Remove(folderpath);
+                    lastSelectedFoldersFile.Remove(foldername);
                 }
             }
         }
@@ -158,17 +160,19 @@ namespace Yava
             // but not for multiple selections:
             if (foldersListView.SelectedItems.Count == 1)
             {
-                String folderpath = (foldersListView.SelectedItems[0].Tag as Folder).Path;
+                Folder folder = foldersListView.SelectedItems[0].Tag as Folder;
+                String foldername = folder.Name;
 
-                if (lastSelectedFoldersFile.ContainsKey(folderpath))
+                if (lastSelectedFoldersFile.ContainsKey(foldername))
                 {
-                    String filepath = lastSelectedFoldersFile[folderpath];
+                    FolderFile file = lastSelectedFoldersFile[foldername];
+                    String filepath = file.Path;
 
                     // find our item:
                     // (there should be a more efficient method to do this)
                     foreach (ListViewItem item in filesListView.Items)
                     {
-                        if ((item.Tag as String).Equals(filepath))
+                        if ((item.Tag as FolderFile).Path.Equals(filepath))
                         {
                             filesListView.EnsureVisible(item.Index);
                             item.Focused = true;
@@ -288,14 +292,13 @@ namespace Yava
                 foreach (ListViewItem selectedItem in foldersListView.SelectedItems)
                 {
                     Folder folder = selectedItem.Tag as Folder;
-
-                    foreach (String filepath in folder.GetFiles())
+                    foreach (FolderFile file in folder.GetFiles())
                     {
                         ListViewItem item = new ListViewItem();
 
-                        item.Text = Path.GetFileName(filepath);
-                        item.Tag = filepath;
-                        item.ToolTipText = filepath;
+                        item.Tag = file;
+                        item.Text = Path.GetFileName(file.Path);
+                        item.ToolTipText = file.Path;
 
                         items.Add(item);
                     }

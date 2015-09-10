@@ -6,8 +6,8 @@
 using System.Reflection;
 
 
-[assembly: AssemblyTitle("Yava Rom Launcher")]
+[assembly: AssemblyTitle("Yava Launcher")]
 [assembly: AssemblyProduct("Yava")]
-[assembly: AssemblyVersion("2015.09.04")]
-[assembly: AssemblyFileVersion("2015.09.04")]
+[assembly: AssemblyVersion("2015.09.10")]
+[assembly: AssemblyFileVersion("2015.09.10")]
 

@@ -45,7 +45,9 @@
     <Compile Include="Assembly\AssemblyInfo.cs" />
     <Compile Include="Controls\DoubleBufferedListView.cs" />
     <Compile Include="FoldersFile\Folder.cs" />
+    <Compile Include="FoldersFile\FolderFile.cs" />
     <Compile Include="FoldersFile\FoldersFileReader.cs" />
+    <Compile Include="FoldersFile\FoldersFileReaderFolder.cs" />
     <Compile Include="FoldersFile\FoldersFileReadError.cs" />
     <Compile Include="Libraries\mINI\mINI.cs" />
     <Compile Include="Program.cs" />

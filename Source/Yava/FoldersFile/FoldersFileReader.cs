@@ -17,7 +17,7 @@ namespace Yava.FoldersFile
         private String filepath;
         private IList<Folder> folders;
 
-        private Folder currentFolder;
+        private FoldersFileReaderFolder currentFolder;
 
         private Int32 currentLineNumber;
         private String currentLine;
@@ -73,13 +73,26 @@ namespace Yava.FoldersFile
         {
             if (currentFolder != null)
             {
-                // validate required folder settings:
+                // name is required:
+                if (currentFolder.Name == null)
+                {
+                    throw ReadError("Folder without name.");
+                }
+
+                // path is required:
                 if (currentFolder.Path == null)
                 {
                     throw ReadError("Folder without path: " + currentFolder.Name);
                 }
 
-                folders.Add(currentFolder);
+                // extensions are optional:
+                if (currentFolder.Extensions == null)
+                {
+                    currentFolder.Extensions = new HashSet<String>();
+                }
+
+                Folder folder = new Folder(currentFolder.Name, currentFolder.Path, currentFolder.Extensions);
+                folders.Add(folder);
                 currentFolder = null;
             }
         }
@@ -132,7 +145,9 @@ namespace Yava.FoldersFile
         protected override void OnSection(String section)
         {
             AddCurrentFolder();
-            currentFolder = new Folder(section);
+
+            currentFolder = new FoldersFileReaderFolder();
+            currentFolder.Name = section;
         }
 
         /// <summary>
@@ -155,7 +170,7 @@ namespace Yava.FoldersFile
 
         /// <summary>
         /// Try to parse folder extensions.
-        /// Spaces are trimmed around each extensions.
+        /// Spaces are trimmed around each extension.
         /// Leading dots are added where needed.
         /// </summary>
         /// <param name="value">Comma separated extensions.</param>

@@ -20,46 +20,53 @@ namespace Yava.FoldersFile
         /// <summary>
         /// Folder path in the filesystem.
         /// </summary>
-        public String Path;
+        public readonly String Path;
 
         /// <summary>
         /// Extensions to include when searching for files.
         /// </summary>
-        public HashSet<String> Extensions;
+        public readonly HashSet<String> Extensions;
 
         /// <summary>
         /// A folder specification.
         /// FoldersFileReader generates them when reading the folders ini file.
         /// </summary>
         /// <param name="name">Folder name.</param>
-        public Folder(String name)
+        /// <param name="path">Folder path in the filesystem.</param>
+        /// <param name="extensions">Extensions to include when searching for files.</param>
+        public Folder(String name, String path, HashSet<String> extensions)
         {
             this.Name = name;
-
-            this.Path = null;
-            this.Extensions = new HashSet<String>();
+            this.Path = path;
+            this.Extensions = extensions;
         }
 
         /// <summary>
         /// Search this folder path and return the matching files.
         /// </summary>
-        public IEnumerable<String> GetFiles()
+        public IEnumerable<FolderFile> GetFiles()
         {
-            // no extensions to filter, return everything:
+            List<FolderFile> result = new List<FolderFile>();
+
+            // no extensions specified:
             if (Extensions.Count == 0)
             {
-                return Directory.GetFiles(Path);
+                foreach (String filepath in Directory.EnumerateFiles(Path))
+                {
+                    result.Add(new FolderFile(this, filepath));
+                } 
             }
 
-            List<String> result = new List<String>();
-
-            foreach (String filepath in Directory.GetFiles(Path))
+            // filter by the specified extensions:
+            else
             {
-                String extension = System.IO.Path.GetExtension(filepath);
-
-                if (Extensions.Contains(extension))
+                foreach (String filepath in Directory.EnumerateFiles(Path))
                 {
-                    result.Add(filepath);
+                    String extension = System.IO.Path.GetExtension(filepath);
+                    if (Extensions.Contains(extension))
+                    {
+                        result.Add(new FolderFile(this, filepath));
+                    }
                 }
             }
 
