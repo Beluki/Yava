@@ -29,7 +29,10 @@ namespace Yava
         // folders:
         private readonly String foldersFilepath;
         private readonly FoldersFileReader foldersFileReader;
-        private readonly Dictionary<String, FolderFile> lastSelectedFoldersFile;
+
+        // remembering selected folders and files:
+        private String lastSelectedFolderName;
+        private Dictionary<String, FolderFile> folderNameToLastSelectedFile;
 
         /// <summary>
         /// Yava implementation.
@@ -85,15 +88,21 @@ namespace Yava
             // folders:
             this.foldersFilepath = foldersFilepath;
             this.foldersFileReader = new FoldersFileReader();
-            this.lastSelectedFoldersFile = new Dictionary<String, FolderFile>();
 
-            // load folders and resize:
+            // remembering selected folders and files:
+            this.lastSelectedFolderName = null;
+            this.folderNameToLastSelectedFile = new Dictionary<String, FolderFile>();
+
+            // load content:
             LoadFolders();
-            ListViewsResize();
 
-            // wire listviews events:
+            // wire events - listviews:
             foldersListView.ItemSelectionChanged += OnFoldersListViewItemSelectionChanged;
-            filesListView.LostFocus += OnFilesListViewLostFocus;
+            filesListView.ItemSelectionChanged += OnFilesListViewItemSelectionChanged;
+
+            // wire events - keyboard:
+            foldersListView.KeyDown += OnFoldersListViewKeyDown;
+            filesListView.KeyDown += OnFilesListViewKeyDown;
         }
 
         ///
@@ -120,13 +129,57 @@ namespace Yava
         }
 
         ///
-        /// Selecting listview items
+        /// Remembering selected items
         /// 
+
+        /// <summary>
+        /// Remember the current selected folder, by name.
+        /// This is used in combination with ListViewFoldersSelectLastSelectedFolder()
+        /// to set the selected folder after reloading the listview.
+        /// </summary>
+        private void ListViewFoldersRememberSelectedFolder()
+        {
+            // we remember the last selected folder
+            // but not for multiple selections:
+            if (foldersListView.SelectedItems.Count == 1)
+            {
+                Folder folder = foldersListView.SelectedItems[0].Tag as Folder;
+                String foldername = folder.Name;
+
+                lastSelectedFolderName = foldername;
+            }
+            // no selection or multiple selections:
+            else
+            {
+                lastSelectedFolderName = null;
+            }
+        }
+
+        /// <summary>
+        /// Try to select the folder that was last selected on the folders listview.
+        /// </summary>
+        private void ListViewFoldersSelectLastSelectedFolder()
+        {
+            if (lastSelectedFolderName != null)
+            {
+                // find our item:
+                foreach (ListViewItem item in foldersListView.Items)
+                {
+                    if ((item.Tag as Folder).Name.Equals(lastSelectedFolderName))
+                    {
+                        foldersListView.EnsureVisible(item.Index);
+                        item.Focused = true;
+                        item.Selected = true;
+                        break;
+                    }
+                }
+            }
+        }
 
         /// <summary>
         /// Remember the current folder selected file.
         /// This is used in combination with ListViewFilesSelectLastSelectedFile()
-        /// to set the selected file after a folder change.
+        /// to set the selected file after a folder change or after reloading.
         /// </summary>
         private void ListViewFilesRememberSelectedFile()
         {
@@ -140,13 +193,13 @@ namespace Yava
                 if (filesListView.SelectedItems.Count == 1)
                 {
                     FolderFile file = filesListView.SelectedItems[0].Tag as FolderFile;
-                    lastSelectedFoldersFile[foldername] = file;
+                    folderNameToLastSelectedFile[foldername] = file;
                 }
                 else
                 {
                     // note: Dictionary.Remove(key) does nothing when the key is not found
                     // no need for additional checks:
-                    lastSelectedFoldersFile.Remove(foldername);
+                    folderNameToLastSelectedFile.Remove(foldername);
                 }
             }
         }
@@ -163,9 +216,9 @@ namespace Yava
                 Folder folder = foldersListView.SelectedItems[0].Tag as Folder;
                 String foldername = folder.Name;
 
-                if (lastSelectedFoldersFile.ContainsKey(foldername))
+                if (folderNameToLastSelectedFile.ContainsKey(foldername))
                 {
-                    FolderFile file = lastSelectedFoldersFile[foldername];
+                    FolderFile file = folderNameToLastSelectedFile[foldername];
                     String filepath = file.Path;
 
                     // find our item:
@@ -277,6 +330,7 @@ namespace Yava
             foldersListView.Items.Clear();
             foldersListView.Items.AddRange(items);
             foldersListView.EndUpdate();
+            ListViewsResize();
         }
 
         /// <summary>
@@ -320,6 +374,7 @@ namespace Yava
             filesListView.Items.Clear();
             filesListView.Items.AddRange(items.ToArray());
             filesListView.EndUpdate();
+            ListViewsResize();
         }
 
         ///
@@ -353,16 +408,54 @@ namespace Yava
         private void OnFoldersListViewItemSelectionChanged(Object sender, ListViewItemSelectionChangedEventArgs e)
         {
             LoadFiles();
-            ListViewsResize();
             ListViewFilesSelectLastSelectedFile();
         }
 
         /// <summary>
-        /// When the files listview loses focus, remember the last selected file.
+        /// When the file selection changes
+        /// remember the new one as the last selected file.
         /// </summary>
-        private void OnFilesListViewLostFocus(Object sender, EventArgs e)
+        private void OnFilesListViewItemSelectionChanged(Object sender, ListViewItemSelectionChangedEventArgs e)
         {
             ListViewFilesRememberSelectedFile();
+        }
+
+        ///
+        /// Events: keyboard
+        ///
+
+        /// <summary>
+        /// Folders listview keyboard shortcuts.
+        /// </summary>
+        private void OnFoldersListViewKeyDown(Object sender, KeyEventArgs e)
+        {
+            switch (e.KeyData)
+            {
+                case Keys.F5:
+                    ListViewFoldersRememberSelectedFolder();
+                    LoadFolders();
+                    ListViewFoldersSelectLastSelectedFolder();
+                    foldersListView.Focus();
+                    e.Handled = true;
+                    break;
+            }
+        }
+
+        /// <summary>
+        /// Files listview keyboard shortcuts.
+        /// </summary>
+        private void OnFilesListViewKeyDown(Object sender, KeyEventArgs e)
+        {
+            switch (e.KeyData)
+            {
+                case Keys.F5:
+                    ListViewFoldersRememberSelectedFolder();
+                    LoadFolders();
+                    ListViewFoldersSelectLastSelectedFolder();
+                    filesListView.Focus();
+                    e.Handled = true;
+                    break;
+            }
         }
     }
 }
