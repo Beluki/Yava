@@ -91,7 +91,33 @@ namespace Yava.FoldersFile
                     currentFolder.Extensions = new HashSet<String>();
                 }
 
-                Folder folder = new Folder(currentFolder.Name, currentFolder.Path, currentFolder.Extensions);
+                // executable is required:
+                if (currentFolder.Executable == null)
+                {
+                    throw ReadError("Folder without executable: " + currentFolder.Name);
+                }
+
+                // parameters are optional:
+                if (currentFolder.Parameters == null)
+                {
+                    currentFolder.Parameters = "%FILEPATH%";
+                }
+
+                // working directory is optional:
+                if (currentFolder.WorkingDirectory == null)
+                {
+                    currentFolder.WorkingDirectory = Path.GetDirectoryName(currentFolder.Executable);
+                }
+
+                Folder folder = new Folder(
+                    currentFolder.Name,
+                    currentFolder.Path,
+                    currentFolder.Extensions,
+                    currentFolder.Executable,
+                    currentFolder.Parameters,
+                    currentFolder.WorkingDirectory
+                );
+
                 folders.Add(folder);
                 currentFolder = null;
             }
@@ -194,6 +220,51 @@ namespace Yava.FoldersFile
         }
 
         /// <summary>
+        /// Try to parse a folder executable.
+        /// Relative paths are converted to absolute.
+        /// Environment variables are expanded (e.g. %APPDATA%).
+        /// </summary>
+        /// <param name="value">Path to read.</param>
+        private String ReadFolderExecutable(String value)
+        {
+            try
+            {
+                return Util.ToAbsoluteExpandedPath(value);
+            }
+            catch (Exception exception)
+            {
+                throw ReadError(exception.Message);
+            }
+        }
+
+        /// <summary>
+        /// Try to parse folder parameters.
+        /// </summary>
+        /// <param name="value">Parameters to read.</param>
+        private String ReadFolderParameters(String value)
+        {
+            return value;
+        }
+
+        /// <summary>
+        /// Try to parse a folder working directory.
+        /// Relative paths are converted to absolute.
+        /// Environment variables are expanded (e.g. %APPDATA%).
+        /// </summary>
+        /// <param name="value">Path to read.</param>
+        private String ReadFolderWorkingDirectory(String value)
+        {
+            try
+            {
+                return Util.ToAbsoluteExpandedPath(value);
+            }
+            catch (Exception exception)
+            {
+                throw ReadError(exception.Message);
+            }
+        }
+
+        /// <summary>
         /// Set key=value pairs as options to the current folder.
         /// </summary>
         protected override void OnKeyValue(String key, String value)
@@ -208,6 +279,18 @@ namespace Yava.FoldersFile
 
                     case "extensions":
                         currentFolder.Extensions = ReadFolderExtensions(value);
+                        break;
+
+                    case "executable":
+                        currentFolder.Executable = ReadFolderExecutable(value);
+                        break;
+
+                    case "parameters":
+                        currentFolder.Parameters = ReadFolderParameters(value);
+                        break;
+
+                    case "workingdirectory":
+                        currentFolder.WorkingDirectory = ReadFolderWorkingDirectory(value);
                         break;
 
                     default:

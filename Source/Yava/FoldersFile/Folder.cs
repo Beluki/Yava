@@ -28,17 +28,38 @@ namespace Yava.FoldersFile
         public readonly HashSet<String> Extensions;
 
         /// <summary>
+        /// Application to start.
+        /// </summary>
+        public readonly String Executable;
+
+        /// <summary>
+        /// Command-line arguments to use when launching the application.
+        /// </summary>
+        public readonly String Parameters;
+
+        /// <summary>
+        /// Initial directory for the application to be started.
+        /// </summary>
+        public readonly String WorkingDirectory;
+
+        /// <summary>
         /// A folder specification.
         /// FoldersFileReader generates them when reading the folders ini file.
         /// </summary>
         /// <param name="name">Folder name.</param>
         /// <param name="path">Folder path in the filesystem.</param>
         /// <param name="extensions">Extensions to include when searching for files.</param>
-        public Folder(String name, String path, HashSet<String> extensions)
+        /// <param name="executable">Application to start.</param>
+        /// <param name="parameters">Command-line arguments to use when launching the application.</param>
+        /// <param name="workingdirectory">Initial directory for the application to be started.</param>
+        public Folder(String name, String path, HashSet<String> extensions, String executable, String parameters, String workingdirectory)
         {
             this.Name = name;
             this.Path = path;
             this.Extensions = extensions;
+            this.Executable = executable;
+            this.Parameters = parameters;
+            this.WorkingDirectory = workingdirectory;
         }
 
         /// <summary>

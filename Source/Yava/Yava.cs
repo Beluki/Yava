@@ -101,6 +101,9 @@ namespace Yava
             foldersListView.KeyDown += OnFoldersListViewKeyDown;
             filesListView.KeyDown += OnFilesListViewKeyDown;
 
+            // wire events - mouse:
+            filesListView.MouseDoubleClick += OnFilesListViewMouseDoubleClick;
+
             // load content:
             LoadContent();
         }
@@ -272,6 +275,17 @@ namespace Yava
                 String caption = "Error openning folders file";
                 MessageBox.Show(text, caption);
             }
+        }
+
+        /// <summary>
+        /// Run the currently selected file on the files listview.
+        /// </summary>
+        private void ListViewFilesExecuteSelectedFile()
+        {
+            if (filesListView.SelectedItems.Count == 1)
+            {
+                FolderFile file = filesListView.SelectedItems[0].Tag as FolderFile;
+            }           
         }
 
         ///
@@ -501,6 +515,24 @@ namespace Yava
                     filesListView.Focus();
                     e.Handled = true;
                     break;
+                case Keys.Return:
+                    ListViewFilesExecuteSelectedFile();
+                    break;
+            }
+        }
+
+        ///
+        /// Events: mouse
+        ///
+
+        /// <summary>
+        /// On double click, run the currently selected file.
+        /// </summary>
+        private void OnFilesListViewMouseDoubleClick(Object sender, MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Left)
+            {
+                ListViewFilesExecuteSelectedFile();
             }
         }
     }
