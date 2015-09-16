@@ -311,6 +311,9 @@ namespace Yava
                 try
                 {
                     Process process = Process.Start(psi);
+
+                    process.PriorityBoostEnabled = true;
+                    process.PriorityClass = ProcessPriorityClass.AboveNormal;
                 }
                 catch (Exception exception)
                 {
