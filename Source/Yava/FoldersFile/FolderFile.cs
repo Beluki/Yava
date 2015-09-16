@@ -1,6 +1,6 @@
 ﻿
 // Yava.
-// A simple, portable game/rom launcher.
+// A simple, portable game/emulator launcher.
 
 
 using System;
@@ -13,7 +13,7 @@ namespace Yava.FoldersFile
         /// <summary>
         /// The folder this file belongs to.
         /// </summary>
-        public readonly Folder folder;
+        public readonly Folder Folder;
 
         /// <summary>
         /// File path in the filesystem.
@@ -28,7 +28,7 @@ namespace Yava.FoldersFile
         /// <param name="path">File path in the filesystem.</param>
         public FolderFile(Folder folder, String path)
         {
-            this.folder = folder;
+            this.Folder = folder;
             this.Path = path;
         }
     }

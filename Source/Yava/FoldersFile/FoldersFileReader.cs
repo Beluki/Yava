@@ -1,6 +1,6 @@
 ﻿
 // Yava.
-// A simple, portable game/rom launcher.
+// A simple, portable game/emulator launcher.
 
 
 using System;
@@ -82,10 +82,10 @@ namespace Yava.FoldersFile
                 // path is required:
                 if (currentFolder.Path == null)
                 {
-                    throw ReadError("Folder without path: " + currentFolder.Name);
+                    throw ReadError("Expected 'path = value' option for folder: " + currentFolder.Name);
                 }
 
-                // extensions are optional:
+                // extensions are optional, default: empty (all extensions):
                 if (currentFolder.Extensions == null)
                 {
                     currentFolder.Extensions = new HashSet<String>();
@@ -94,16 +94,16 @@ namespace Yava.FoldersFile
                 // executable is required:
                 if (currentFolder.Executable == null)
                 {
-                    throw ReadError("Folder without executable: " + currentFolder.Name);
+                    throw ReadError("Expected 'executable = value' option for folder: " + currentFolder.Name);
                 }
 
-                // parameters are optional:
+                // parameters are optional, default: file path
                 if (currentFolder.Parameters == null)
                 {
                     currentFolder.Parameters = "%FILEPATH%";
                 }
 
-                // working directory is optional:
+                // working directory is optional, default: executable path
                 if (currentFolder.WorkingDirectory == null)
                 {
                     currentFolder.WorkingDirectory = Path.GetDirectoryName(currentFolder.Executable);
@@ -190,7 +190,7 @@ namespace Yava.FoldersFile
             }
             catch (Exception exception)
             {
-                throw ReadError(exception.Message);
+                throw ReadError("Unable to read 'path' option: " + exception.Message);
             }
         }
 
@@ -233,7 +233,7 @@ namespace Yava.FoldersFile
             }
             catch (Exception exception)
             {
-                throw ReadError(exception.Message);
+                throw ReadError("Unable to read 'executable' option: " + exception.Message);
             }
         }
 
@@ -260,7 +260,7 @@ namespace Yava.FoldersFile
             }
             catch (Exception exception)
             {
-                throw ReadError(exception.Message);
+                throw ReadError("Unable to read 'workingdirectory' option: " + exception.Message);
             }
         }
 

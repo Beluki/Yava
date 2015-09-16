@@ -1,6 +1,6 @@
 ﻿
 // Yava.
-// A simple, portable game/rom launcher.
+// A simple, portable game/emulator launcher.
 
 
 using System;
@@ -16,7 +16,6 @@ namespace Yava.FoldersFile
         /// expanded (e.g. %APPDATA%).
         /// </summary>
         /// <param name="path">Input path.</param>
-        /// <returns></returns>
         public static String ToAbsoluteExpandedPath(String path)
         {
             return Path.GetFullPath(Environment.ExpandEnvironmentVariables(path));

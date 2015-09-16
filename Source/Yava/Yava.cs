@@ -1,6 +1,6 @@
 ﻿
 // Yava.
-// A simple, portable game/rom launcher.
+// A simple, portable game/emulator launcher.
 
 
 using System;
