@@ -65,7 +65,7 @@ namespace Yava.FoldersFile
         /// <summary>
         /// Search this folder path and return the matching files.
         /// </summary>
-        public IEnumerable<FolderFile> GetFiles()
+        public IEnumerable<FolderFile> EnumerateFiles()
         {
             // no extensions specified:
             if (Extensions.Count == 0)

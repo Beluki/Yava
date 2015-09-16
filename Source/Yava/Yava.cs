@@ -285,6 +285,53 @@ namespace Yava
             if (filesListView.SelectedItems.Count == 1)
             {
                 FolderFile file = filesListView.SelectedItems[0].Tag as FolderFile;
+                Folder folder = file.Folder;
+
+                // create settings:
+                String filename = folder.Executable;
+                String arguments = folder.Parameters;
+                String workingdirectory = folder.WorkingDirectory;
+
+                // replace variables:
+                String FILEPATH = '"' + file.Path + '"';
+                String FOLDERPATH = '"' + folder.Path + '"';
+
+                filename = filename.Replace("%FILEPATH%", FILEPATH).Replace("%FOLDERPATH%", FOLDERPATH);
+                arguments = arguments.Replace("%FILEPATH%", FILEPATH).Replace("%FOLDERPATH%", FOLDERPATH);
+                workingdirectory = workingdirectory.Replace("%FILEPATH%", FILEPATH).Replace("%FOLDERPATH%", FOLDERPATH);
+
+                // create the process information:
+                ProcessStartInfo psi = new ProcessStartInfo();
+
+                psi.FileName = filename;
+                psi.Arguments = arguments;
+                psi.WorkingDirectory = workingdirectory;
+
+                // run it:
+                try
+                {
+                    Process process = Process.Start(psi);
+                }
+                catch (Exception exception)
+                {
+                    String text = String.Format(
+                        "Error executing: \n" +
+                        "{0} \n\n" +
+                        "Parameters: \n" +
+                        "{1} \n\n" +
+                        "Working Directory: \n" +
+                        "{2} \n\n" +
+                        "Exception message: \n" +
+                        "{3}",
+                        psi.FileName,
+                        psi.Arguments,
+                        psi.WorkingDirectory,
+                        exception.Message
+                    );
+
+                    String caption = "Error executing file";
+                    MessageBox.Show(text, caption);
+                }
             }           
         }
 
@@ -385,7 +432,7 @@ namespace Yava
                 foreach (ListViewItem selectedItem in foldersListView.SelectedItems)
                 {
                     Folder folder = selectedItem.Tag as Folder;
-                    foreach (FolderFile file in folder.GetFiles())
+                    foreach (FolderFile file in folder.EnumerateFiles())
                     {
                         ListViewItem item = new ListViewItem();
 
@@ -429,11 +476,11 @@ namespace Yava
         /// Loads both folders and files, selecting the last
         /// selected ones when possible.
         /// </summary>
-        public void LoadContent()
+        private void LoadContent()
         {
             LoadFolders();
             ListViewFoldersSelectLastSelectedFolder();
-            
+
             LoadFiles();
             ListViewFilesSelectLastSelectedFile();
         }
