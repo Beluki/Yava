@@ -356,8 +356,13 @@ namespace Yava
 
                     Process process = Process.Start(psi);
 
-                    process.PriorityBoostEnabled = true;
-                    process.PriorityClass = ProcessPriorityClass.AboveNormal;
+                    // the check is needed, Process.Start("folder") would success,
+                    // and open the given folder in explorer, but return null:
+                    if (process != null)
+                    {
+                        process.PriorityBoostEnabled = true;
+                        process.PriorityClass = ProcessPriorityClass.AboveNormal;
+                    }
                 }
 
                 catch (Exception exception)
