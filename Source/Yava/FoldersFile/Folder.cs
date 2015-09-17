@@ -23,22 +23,25 @@ namespace Yava.FoldersFile
         public readonly String Path;
 
         /// <summary>
-        /// Extensions to include when searching for files.
-        /// </summary>
-        public readonly HashSet<String> Extensions;
-
-        /// <summary>
         /// Application to start.
         /// </summary>
         public readonly String Executable;
 
         /// <summary>
+        /// Extensions to include when searching for files.
+        /// Can be null when unspecified in the ini file.
+        /// </summary>
+        public readonly HashSet<String> Extensions;
+
+        /// <summary>
         /// Command-line arguments to use when launching the application.
+        /// Can be null when unspecified in the ini file.
         /// </summary>
         public readonly String Parameters;
 
         /// <summary>
         /// Initial directory for the application to be started.
+        /// Can be null when unspecified in the ini file.
         /// </summary>
         public readonly String WorkingDirectory;
 
@@ -68,7 +71,7 @@ namespace Yava.FoldersFile
         public IEnumerable<FolderFile> EnumerateFiles()
         {
             // no extensions specified:
-            if (Extensions.Count == 0)
+            if (Extensions == null)
             {
                 foreach (String filepath in Directory.EnumerateFiles(Path))
                 {

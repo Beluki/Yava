@@ -22,22 +22,25 @@ namespace Yava.FoldersFile
         public String Path;
 
         /// <summary>
-        /// Extensions to include when searching for files.
-        /// </summary>
-        public HashSet<String> Extensions;
-
-        /// <summary>
         /// Application to start.
         /// </summary>
         public String Executable;
 
         /// <summary>
+        /// Extensions to include when searching for files.
+        /// Can be null when unspecified in the ini file.
+        /// </summary>
+        public HashSet<String> Extensions;
+
+        /// <summary>
         /// Command-line arguments to use when launching the application.
+        /// Can be null when unspecified in the ini file.
         /// </summary>
         public String Parameters;
 
         /// <summary>
         /// Initial directory for the application to be started.
+        /// Can be null when unspecified in the ini file.
         /// </summary>
         public String WorkingDirectory;
 

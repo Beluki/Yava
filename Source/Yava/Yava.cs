@@ -287,34 +287,79 @@ namespace Yava
                 FolderFile file = filesListView.SelectedItems[0].Tag as FolderFile;
                 Folder folder = file.Folder;
 
-                // create settings:
-                String filename = folder.Executable;
-                String arguments = folder.Parameters;
+                // setup paths and process options:
+                String executable = folder.Executable;
+                String parameters = folder.Parameters;
                 String workingdirectory = folder.WorkingDirectory;
 
-                // replace variables:
-                String FILEPATH = '"' + file.Path + '"';
-                String FOLDERPATH = '"' + folder.Path + '"';
-
-                filename = filename.Replace("%FILEPATH%", FILEPATH).Replace("%FOLDERPATH%", FOLDERPATH);
-                arguments = arguments.Replace("%FILEPATH%", FILEPATH).Replace("%FOLDERPATH%", FOLDERPATH);
-                workingdirectory = workingdirectory.Replace("%FILEPATH%", FILEPATH).Replace("%FOLDERPATH%", FOLDERPATH);
-
-                // create the process information:
-                ProcessStartInfo psi = new ProcessStartInfo();
-
-                psi.FileName = filename;
-                psi.Arguments = arguments;
-                psi.WorkingDirectory = workingdirectory;
-
-                // run it:
                 try
                 {
+                    // variables to expand as absolute paths:
+                    String FILEPATH = Path.GetFullPath(file.Path);
+                    String FOLDERPATH = Path.GetFullPath(folder.Path);
+
+                    // executable:
+                    executable = executable.Replace("%FILEPATH%", FILEPATH).Replace("%FOLDERPATH%", FOLDERPATH);
+                    executable = Path.GetFullPath(executable);
+
+                    // parameters:
+                    // when none specified, use the selected file path:
+                    if (parameters == null)
+                    {
+                        parameters = '"' + "%FILEPATH%" + '"';
+                    }
+
+                    parameters = parameters.Replace("%FILEPATH%", FILEPATH).Replace("%FOLDERPATH%", FOLDERPATH);
+
+                    // working directory:
+                    // when none specified, use the executable folder:
+                    if (workingdirectory == null)
+                    {
+                        workingdirectory = Path.GetDirectoryName(executable);
+                    }
+
+                    workingdirectory = workingdirectory.Replace("%FILEPATH%", FILEPATH).Replace("%FOLDERPATH%", FOLDERPATH);
+                    workingdirectory = Path.GetFullPath(workingdirectory);
+                }
+
+                catch (Exception exception)
+                {
+                    String text = String.Format(
+                        "Executable: \n" +
+                        "{0} \n\n" +
+                        "Parameters: \n" +
+                        "{1} \n\n" +
+                        "Working Directory: \n" +
+                        "{2} \n\n" +
+                        "Exception message: \n" +
+                        "{3}",
+                        executable,
+                        parameters ?? "<empty> (use file path)",
+                        workingdirectory ?? "<empty> (use executable folder)",
+                        exception.Message
+                    );
+
+                    String caption = "Error setting up process";
+                    MessageBox.Show(text, caption, MessageBoxButtons.OK);
+
+                    return;
+                }
+
+                // setup process and run it
+                ProcessStartInfo psi = new ProcessStartInfo();
+
+                try
+                {
+                    psi.FileName = executable;
+                    psi.Arguments = parameters;
+                    psi.WorkingDirectory = workingdirectory;
+
                     Process process = Process.Start(psi);
 
                     process.PriorityBoostEnabled = true;
                     process.PriorityClass = ProcessPriorityClass.AboveNormal;
                 }
+
                 catch (Exception exception)
                 {
                     String text = String.Format(

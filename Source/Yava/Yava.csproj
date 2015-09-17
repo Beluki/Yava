@@ -5,7 +5,7 @@
     <Platform Condition=" '$(Platform)' == '' ">x86</Platform>
     <ProductVersion>8.0.30703</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{23EF4A6F-A720-4CA1-A345-AA6AD3A1B5D2}</ProjectGuid>
+    <ProjectGuid>{70DB7C36-4399-4230-8744-00279027BEF5}</ProjectGuid>
     <OutputType>WinExe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Yava</RootNamespace>
@@ -49,7 +49,6 @@
     <Compile Include="FoldersFile\FoldersFileReader.cs" />
     <Compile Include="FoldersFile\FoldersFileReaderFolder.cs" />
     <Compile Include="FoldersFile\FoldersFileReadError.cs" />
-    <Compile Include="FoldersFile\Util.cs" />
     <Compile Include="Libraries\mINI\mINI.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Util.cs" />

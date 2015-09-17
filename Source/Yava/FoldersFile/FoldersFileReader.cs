@@ -73,40 +73,20 @@ namespace Yava.FoldersFile
         {
             if (currentFolder != null)
             {
-                // name is required:
+                // check required options:
                 if (currentFolder.Name == null)
                 {
                     throw ReadError("Folder without name.");
                 }
 
-                // path is required:
                 if (currentFolder.Path == null)
                 {
                     throw ReadError("Expected 'path = value' option for folder: " + currentFolder.Name);
                 }
 
-                // extensions are optional, default: empty (all extensions):
-                if (currentFolder.Extensions == null)
-                {
-                    currentFolder.Extensions = new HashSet<String>();
-                }
-
-                // executable is required:
                 if (currentFolder.Executable == null)
                 {
                     throw ReadError("Expected 'executable = value' option for folder: " + currentFolder.Name);
-                }
-
-                // parameters are optional, default: file path
-                if (currentFolder.Parameters == null)
-                {
-                    currentFolder.Parameters = "%FILEPATH%";
-                }
-
-                // working directory is optional, default: executable path
-                if (currentFolder.WorkingDirectory == null)
-                {
-                    currentFolder.WorkingDirectory = Path.GetDirectoryName(currentFolder.Executable);
                 }
 
                 Folder folder = new Folder(
@@ -140,14 +120,6 @@ namespace Yava.FoldersFile
         }
 
         /// <summary>
-        /// Do not accept options with no value.
-        /// </summary>
-        protected override void OnValueEmpty(String key)
-        {
-            throw ReadError("Empty folder option value.");
-        }
-
-        /// <summary>
         /// Syntax errors.
         /// </summary>
         protected override void OnUnknown(String line)
@@ -177,16 +149,23 @@ namespace Yava.FoldersFile
         }
 
         /// <summary>
-        /// Try to parse a folder path.
-        /// Relative paths are converted to absolute.
-        /// Environment variables are expanded (e.g. %APPDATA%).
+        /// Try to parse a folder path option.
+        /// The path cannot be empty and must be syntactically valid.
         /// </summary>
-        /// <param name="value">Path to read.</param>
+        /// <param name="value">
+        /// Path to parse.
+        /// </param>
         private String ReadFolderPath(String value)
         {
+            if (value == String.Empty)
+            {
+                throw ReadError("Option 'path' cannot be empty for folder: " + currentFolder.Name);
+            }
+
             try
             {
-                return Util.ToAbsoluteExpandedPath(value);
+                Path.GetFullPath(value);
+                return value;
             }
             catch (Exception exception)
             {
@@ -195,13 +174,37 @@ namespace Yava.FoldersFile
         }
 
         /// <summary>
-        /// Try to parse folder extensions.
+        /// Try to parse a folder executable option.
+        /// The executable cannot be empty.
+        /// </summary>
+        /// <param name="value">
+        /// Path to parse.
+        /// </param>
+        private String ReadFolderExecutable(String value)
+        {
+            if (value == String.Empty)
+            {
+                throw ReadError("Option 'executable' cannot be empty for folder: " + currentFolder.Name);
+            }
+
+            return value;
+        }
+
+        /// <summary>
+        /// Try to parse a folder extensions option.
         /// Spaces are trimmed around each extension.
         /// Leading dots are added where needed.
         /// </summary>
-        /// <param name="value">Comma separated extensions.</param>
+        /// <param name="value">
+        /// Comma separated extensions.
+        /// </param>
         private HashSet<String> ReadFolderExtensions(String value)
         {
+            if (value == String.Empty)
+            {
+                throw ReadError("Option 'extensions' cannot be empty for folder: " + currentFolder.Name);
+            }
+
             String[] extensions = value.Split(',');
 
             for (int i = 0; i < extensions.Length; i++)
@@ -220,48 +223,23 @@ namespace Yava.FoldersFile
         }
 
         /// <summary>
-        /// Try to parse a folder executable.
-        /// Relative paths are converted to absolute.
-        /// Environment variables are expanded (e.g. %APPDATA%).
+        /// Try to parse folder parameters option.
+        /// Currently does nothing and return value as is.
         /// </summary>
-        /// <param name="value">Path to read.</param>
-        private String ReadFolderExecutable(String value)
-        {
-            try
-            {
-                return Util.ToAbsoluteExpandedPath(value);
-            }
-            catch (Exception exception)
-            {
-                throw ReadError("Unable to read 'executable' option: " + exception.Message);
-            }
-        }
-
-        /// <summary>
-        /// Try to parse folder parameters.
-        /// </summary>
-        /// <param name="value">Parameters to read.</param>
+        /// <param name="value">Parameters to parse.</param>
         private String ReadFolderParameters(String value)
         {
             return value;
         }
 
         /// <summary>
-        /// Try to parse a folder working directory.
-        /// Relative paths are converted to absolute.
-        /// Environment variables are expanded (e.g. %APPDATA%).
+        /// Try to parse folder workingdirectory option.
+        /// Currently does nothing and return value as is.
         /// </summary>
-        /// <param name="value">Path to read.</param>
+        /// <param name="value">Path to parse.</param>
         private String ReadFolderWorkingDirectory(String value)
         {
-            try
-            {
-                return Util.ToAbsoluteExpandedPath(value);
-            }
-            catch (Exception exception)
-            {
-                throw ReadError("Unable to read 'workingdirectory' option: " + exception.Message);
-            }
+            return value;
         }
 
         /// <summary>
@@ -277,12 +255,12 @@ namespace Yava.FoldersFile
                         currentFolder.Path = ReadFolderPath(value);
                         break;
 
-                    case "extensions":
-                        currentFolder.Extensions = ReadFolderExtensions(value);
-                        break;
-
                     case "executable":
                         currentFolder.Executable = ReadFolderExecutable(value);
+                        break;
+
+                    case "extensions":
+                        currentFolder.Extensions = ReadFolderExtensions(value);
                         break;
 
                     case "parameters":
