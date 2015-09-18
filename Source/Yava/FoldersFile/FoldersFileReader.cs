@@ -17,6 +17,7 @@ namespace Yava.FoldersFile
         private String filepath;
         private IList<Folder> folders;
 
+        private HashSet<String> seenFolderNames;
         private FoldersFileReaderFolder currentFolder;
 
         private Int32 currentLineNumber;
@@ -32,6 +33,7 @@ namespace Yava.FoldersFile
             filepath = null;
             folders = null;
 
+            seenFolderNames = new HashSet<String>();
             currentFolder = null;
 
             currentLineNumber = 0;
@@ -46,6 +48,7 @@ namespace Yava.FoldersFile
             filepath = null;
             folders = null;
 
+            seenFolderNames.Clear();
             currentFolder = null;
 
             currentLineNumber = 0;
@@ -89,11 +92,12 @@ namespace Yava.FoldersFile
                     throw ReadError("Expected 'executable = value' option for folder: " + currentFolder.Name);
                 }
 
+                // create and add the new folder:
                 Folder folder = new Folder(
                     currentFolder.Name,
                     currentFolder.Path,
-                    currentFolder.Extensions,
                     currentFolder.Executable,
+                    currentFolder.Extensions,
                     currentFolder.Parameters,
                     currentFolder.WorkingDirectory
                 );
@@ -117,6 +121,15 @@ namespace Yava.FoldersFile
         protected override void OnKeyEmpty(String value)
         {
             throw ReadError("Empty folder option name.");
+        }
+
+        /// <summary>
+        /// Options without value are fine.
+        /// (each option validates its own value in OnKeyValue)
+        /// </summary>
+        protected override void OnValueEmpty(String key)
+        {
+
         }
 
         /// <summary>
@@ -144,17 +157,24 @@ namespace Yava.FoldersFile
         {
             AddCurrentFolder();
 
+            // folder names must be unique:
+            String name = section;
+
+            if (seenFolderNames.Contains(name))
+            {
+                throw ReadError("Duplicate folder name: " + name);
+            }
+
+            seenFolderNames.Add(name);
             currentFolder = new FoldersFileReaderFolder();
-            currentFolder.Name = section;
+            currentFolder.Name = name;
         }
 
         /// <summary>
         /// Try to parse a folder path option.
         /// The path cannot be empty and must be syntactically valid.
         /// </summary>
-        /// <param name="value">
-        /// Path to parse.
-        /// </param>
+        /// <param name="value">Path to parse.</param>
         private String ReadFolderPath(String value)
         {
             if (value == String.Empty)
@@ -177,9 +197,7 @@ namespace Yava.FoldersFile
         /// Try to parse a folder executable option.
         /// The executable cannot be empty.
         /// </summary>
-        /// <param name="value">
-        /// Path to parse.
-        /// </param>
+        /// <param name="value">Path to parse.</param>
         private String ReadFolderExecutable(String value)
         {
             if (value == String.Empty)
@@ -195,9 +213,7 @@ namespace Yava.FoldersFile
         /// Spaces are trimmed around each extension.
         /// Leading dots are added where needed.
         /// </summary>
-        /// <param name="value">
-        /// Comma separated extensions.
-        /// </param>
+        /// <param name="value">Comma separated extensions.</param>
         private HashSet<String> ReadFolderExtensions(String value)
         {
             if (value == String.Empty)
@@ -207,7 +223,7 @@ namespace Yava.FoldersFile
 
             String[] extensions = value.Split(',');
 
-            for (int i = 0; i < extensions.Length; i++)
+            for (Int32 i = 0; i < extensions.Length; i++)
             {
                 String extension = extensions[i].Trim();
 
@@ -224,7 +240,7 @@ namespace Yava.FoldersFile
 
         /// <summary>
         /// Try to parse folder parameters option.
-        /// Currently does nothing and return value as is.
+        /// Currently does nothing and returns the value as is.
         /// </summary>
         /// <param name="value">Parameters to parse.</param>
         private String ReadFolderParameters(String value)
@@ -234,11 +250,16 @@ namespace Yava.FoldersFile
 
         /// <summary>
         /// Try to parse folder workingdirectory option.
-        /// Currently does nothing and return value as is.
+        /// It cannot be empty.
         /// </summary>
         /// <param name="value">Path to parse.</param>
         private String ReadFolderWorkingDirectory(String value)
         {
+            if (value == String.Empty)
+            {
+                throw ReadError("Option 'workingdirectory' cannot be empty for folder: " + currentFolder.Name);
+            }
+
             return value;
         }
 

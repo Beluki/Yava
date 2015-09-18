@@ -138,7 +138,7 @@ namespace Yava
 
         ///
         /// Remembering selected items
-        /// 
+        ///
 
         /// <summary>
         /// Remember the current selected folder.
@@ -287,7 +287,10 @@ namespace Yava
                 FolderFile file = filesListView.SelectedItems[0].Tag as FolderFile;
                 Folder folder = file.Folder;
 
-                // setup paths and process options:
+                // step 1: fill the startup information:
+                ProcessStartInfo psi = null;
+
+                // initial values as specified in the folder options:
                 String executable = folder.Executable;
                 String parameters = folder.Parameters;
                 String workingdirectory = folder.WorkingDirectory;
@@ -304,22 +307,20 @@ namespace Yava
 
                     // parameters:
                     // when none specified, use the selected file path:
-                    if (parameters == null)
-                    {
-                        parameters = '"' + "%FILEPATH%" + '"';
-                    }
-
+                    parameters = parameters ?? '"' + "%FILEPATH%" + '"';
                     parameters = parameters.Replace("%FILEPATH%", FILEPATH).Replace("%FOLDERPATH%", FOLDERPATH);
 
                     // working directory:
                     // when none specified, use the executable folder:
-                    if (workingdirectory == null)
-                    {
-                        workingdirectory = Path.GetDirectoryName(executable);
-                    }
-
+                    workingdirectory = workingdirectory ?? Path.GetDirectoryName(executable);
                     workingdirectory = workingdirectory.Replace("%FILEPATH%", FILEPATH).Replace("%FOLDERPATH%", FOLDERPATH);
                     workingdirectory = Path.GetFullPath(workingdirectory);
+
+                    // everything ok:
+                    psi = new ProcessStartInfo();
+                    psi.FileName = executable;
+                    psi.Arguments = parameters;
+                    psi.WorkingDirectory = workingdirectory;
                 }
 
                 catch (Exception exception)
@@ -334,30 +335,28 @@ namespace Yava
                         "Exception message: \n" +
                         "{3}",
                         executable,
-                        parameters ?? "<empty> (use file path)",
-                        workingdirectory ?? "<empty> (use executable folder)",
+                        parameters ?? "<unspecified> (use file path)",
+                        workingdirectory ?? "<unspecified> (use executable folder)",
                         exception.Message
                     );
 
                     String caption = "Error setting up process";
                     MessageBox.Show(text, caption, MessageBoxButtons.OK);
+                }
 
+                // unable to fill it, bail out:
+                if (psi == null)
+                {
                     return;
                 }
 
-                // setup process and run it
-                ProcessStartInfo psi = new ProcessStartInfo();
-
+                // step 2: run the process:
                 try
                 {
-                    psi.FileName = executable;
-                    psi.Arguments = parameters;
-                    psi.WorkingDirectory = workingdirectory;
-
                     Process process = Process.Start(psi);
 
-                    // the check is needed, Process.Start("folder") would success,
-                    // and open the given folder in explorer, but return null:
+                    // Process.Start() returns null when reusing a process
+                    // http://stackoverflow.com/questions/3456383/process-start-returns-null
                     if (process != null)
                     {
                         process.PriorityBoostEnabled = true;
@@ -385,7 +384,7 @@ namespace Yava
                     String caption = "Error executing file";
                     MessageBox.Show(text, caption);
                 }
-            }           
+            }
         }
 
         ///

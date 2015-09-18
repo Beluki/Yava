@@ -22,7 +22,7 @@ namespace Yava.FoldersFile
 
         /// <summary>
         /// A file specification.
-        /// Folder.GetFiles() generates them from the filesystem.
+        /// Folder.EnumerateFiles() generates them from the filesystem.
         /// </summary>
         /// <param name="folder">The folder this file belongs to.</param>
         /// <param name="path">File path in the filesystem.</param>

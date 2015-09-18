@@ -51,16 +51,16 @@ namespace Yava.FoldersFile
         /// </summary>
         /// <param name="name">Folder name.</param>
         /// <param name="path">Folder path in the filesystem.</param>
-        /// <param name="extensions">Extensions to include when searching for files.</param>
         /// <param name="executable">Application to start.</param>
+        /// <param name="extensions">Extensions to include when searching for files.</param>
         /// <param name="parameters">Command-line arguments to use when launching the application.</param>
         /// <param name="workingdirectory">Initial directory for the application to be started.</param>
-        public Folder(String name, String path, HashSet<String> extensions, String executable, String parameters, String workingdirectory)
+        public Folder(String name, String path, String executable, HashSet<String> extensions, String parameters, String workingdirectory)
         {
             this.Name = name;
             this.Path = path;
-            this.Extensions = extensions;
             this.Executable = executable;
+            this.Extensions = extensions;
             this.Parameters = parameters;
             this.WorkingDirectory = workingdirectory;
         }

@@ -53,8 +53,8 @@ namespace Yava.FoldersFile
         {
             this.Name = null;
             this.Path = null;
-            this.Extensions = null;
             this.Executable = null;
+            this.Extensions = null;
             this.Parameters = null;
             this.WorkingDirectory = null;
         }
