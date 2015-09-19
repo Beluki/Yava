@@ -4,7 +4,9 @@
 
 
 using System;
+using System.Drawing;
 using System.IO;
+using System.Reflection;
 using System.Windows.Forms;
 
 
@@ -40,6 +42,23 @@ namespace Yava
             get
             {
                 return Path.GetDirectoryName(Application.ExecutablePath);
+            }
+        }
+
+        ///
+        /// Resources
+        ///
+
+        /// <summary>
+        /// Load an embedded resource as an icon.
+        /// </summary>
+        /// <param name="resource">Resource name, including namespace.</param>
+        public static Icon ResourceAsIcon(String resource)
+        {
+            Assembly assembly = Assembly.GetExecutingAssembly();
+            using (Stream stream = assembly.GetManifestResourceStream(resource))
+            {
+                return new Icon(stream);
             }
         }
     }

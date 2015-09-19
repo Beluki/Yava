@@ -46,10 +46,11 @@ namespace Yava
         public Yava(String settingsFilepath, String foldersFilepath)
         {
             // this form:
-            DoubleBuffered = true;
-            MinimumSize = new Size(640, 480);
-            ResizeEnd += OnResizeEnd;
-            Text = "Yava Launcher";
+            this.DoubleBuffered = true;
+            this.Icon = Util.ResourceAsIcon("Yava.Resources.gnome-joystick.ico");
+            this.MinimumSize = new Size(640, 480);
+            this.ResizeEnd += OnResizeEnd;
+            this.Text = "Yava Launcher";
 
             // gui components:
             foldersListView = new DoubleBufferedListView();
