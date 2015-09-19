@@ -172,16 +172,17 @@ namespace Yava.FoldersFile
 
         /// <summary>
         /// Try to parse a folder path option.
-        /// The path cannot be empty and must be syntactically valid.
         /// </summary>
         /// <param name="value">Path to parse.</param>
         private String ReadFolderPath(String value)
         {
+            // path cannot be empty:
             if (value == String.Empty)
             {
                 throw ReadError("Option 'path' cannot be empty for folder: " + currentFolder.Name);
             }
 
+            // path must be syntactically valid:
             try
             {
                 Path.GetFullPath(value);
@@ -195,11 +196,11 @@ namespace Yava.FoldersFile
 
         /// <summary>
         /// Try to parse a folder executable option.
-        /// The executable cannot be empty.
         /// </summary>
         /// <param name="value">Path to parse.</param>
         private String ReadFolderExecutable(String value)
         {
+            // executable cannot be empty:
             if (value == String.Empty)
             {
                 throw ReadError("Option 'executable' cannot be empty for folder: " + currentFolder.Name);
@@ -210,12 +211,11 @@ namespace Yava.FoldersFile
 
         /// <summary>
         /// Try to parse a folder extensions option.
-        /// Spaces are trimmed around each extension.
-        /// Leading dots are added where needed.
         /// </summary>
         /// <param name="value">Comma separated extensions.</param>
         private HashSet<String> ReadFolderExtensions(String value)
         {
+            // extensions cannot be empty:
             if (value == String.Empty)
             {
                 throw ReadError("Option 'extensions' cannot be empty for folder: " + currentFolder.Name);
@@ -223,6 +223,8 @@ namespace Yava.FoldersFile
 
             String[] extensions = value.Split(',');
 
+            // trim spaces around each extension
+            // and add a leading dot where needed:
             for (Int32 i = 0; i < extensions.Length; i++)
             {
                 String extension = extensions[i].Trim();
@@ -240,7 +242,6 @@ namespace Yava.FoldersFile
 
         /// <summary>
         /// Try to parse folder parameters option.
-        /// Currently does nothing and returns the value as is.
         /// </summary>
         /// <param name="value">Parameters to parse.</param>
         private String ReadFolderParameters(String value)
@@ -250,11 +251,11 @@ namespace Yava.FoldersFile
 
         /// <summary>
         /// Try to parse folder workingdirectory option.
-        /// It cannot be empty.
         /// </summary>
         /// <param name="value">Path to parse.</param>
         private String ReadFolderWorkingDirectory(String value)
         {
+            // workingdirectory cannot be empty:
             if (value == String.Empty)
             {
                 throw ReadError("Option 'workingdirectory' cannot be empty for folder: " + currentFolder.Name);

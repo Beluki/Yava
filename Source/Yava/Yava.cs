@@ -278,6 +278,120 @@ namespace Yava
         }
 
         /// <summary>
+        /// Execute a file from the files listview.
+        /// </summary>
+        /// <param name="file">File to execute.</param>
+        private void ListViewFilesExecuteFile(FolderFile file)
+        {
+            Folder folder = file.Folder;
+
+            // step 1: fill the startup information:
+            ProcessStartInfo psi = null;
+
+            // initial values as specified in the folder options:
+            String executable = folder.Executable;
+            String parameters = folder.Parameters;
+            String workingdirectory = folder.WorkingDirectory;
+
+            try
+            {
+                // variables to expand as absolute paths:
+                String FILEPATH = Path.GetFullPath(file.Path);
+                String FOLDERPATH = Path.GetFullPath(folder.Path);
+
+                // executable:
+                executable = executable.Replace("%FILEPATH%", FILEPATH);
+                executable = executable.Replace("%FOLDERPATH%", FOLDERPATH);
+                executable = Path.GetFullPath(executable);
+
+                // parameters:
+                // when none specified, use the file path:
+                parameters = parameters ?? '"' + "%FILEPATH%" + '"';
+                parameters = parameters.Replace("%FILEPATH%", FILEPATH);
+                parameters = parameters.Replace("%FOLDERPATH%", FOLDERPATH);
+
+                // working directory:
+                // when none specified, use the executable folder:
+                workingdirectory = workingdirectory ?? Path.GetDirectoryName(executable);
+                workingdirectory = workingdirectory.Replace("%FILEPATH%", FILEPATH);
+                workingdirectory = workingdirectory.Replace("%FOLDERPATH%", FOLDERPATH);
+                workingdirectory = Path.GetFullPath(workingdirectory);
+
+                // everything ok:
+                psi = new ProcessStartInfo();
+                psi.FileName = executable;
+                psi.Arguments = parameters;
+                psi.WorkingDirectory = workingdirectory;
+            }
+
+            // path error (from Path.GetFullPath)
+            // show the exception message:
+            catch (Exception exception)
+            {
+                String text = String.Format(
+                    "Executable: \n" +
+                    "{0} \n\n" +
+                    "Parameters: \n" +
+                    "{1} \n\n" +
+                    "Working Directory: \n" +
+                    "{2} \n\n" +
+                    "Exception message: \n" +
+                    "{3}",
+                    executable,
+                    parameters ?? "<unspecified> (use file path)",
+                    workingdirectory ?? "<unspecified> (use executable folder)",
+                    exception.Message
+                );
+
+                String caption = "Error setting up process";
+                MessageBox.Show(text, caption, MessageBoxButtons.OK);
+            }
+
+            // unable to setup, bail out:
+            if (psi == null)
+            {
+                return;
+            }
+
+            // step 2: run the process:
+            try
+            {
+                Process process = Process.Start(psi);
+
+                // this check is needed because Process.Start(...) returns null
+                // when reusing a process:
+                if (process != null)
+                {
+                    process.PriorityBoostEnabled = true;
+                    process.PriorityClass = ProcessPriorityClass.AboveNormal;
+                }
+            }
+
+            // process error (from Process.Start)
+            // show the exception message:
+            catch (Exception exception)
+            {
+                String text = String.Format(
+                    "Executable: \n" +
+                    "{0} \n\n" +
+                    "Parameters: \n" +
+                    "{1} \n\n" +
+                    "Working Directory: \n" +
+                    "{2} \n\n" +
+                    "Exception message: \n" +
+                    "{3}",
+                    psi.FileName,
+                    psi.Arguments,
+                    psi.WorkingDirectory,
+                    exception.Message
+                );
+
+                String caption = "Error executing file";
+                MessageBox.Show(text, caption);
+            }           
+        }
+
+        /// <summary>
         /// Run the currently selected file on the files listview.
         /// </summary>
         private void ListViewFilesExecuteSelectedFile()
@@ -285,105 +399,7 @@ namespace Yava
             if (filesListView.SelectedItems.Count == 1)
             {
                 FolderFile file = filesListView.SelectedItems[0].Tag as FolderFile;
-                Folder folder = file.Folder;
-
-                // step 1: fill the startup information:
-                ProcessStartInfo psi = null;
-
-                // initial values as specified in the folder options:
-                String executable = folder.Executable;
-                String parameters = folder.Parameters;
-                String workingdirectory = folder.WorkingDirectory;
-
-                try
-                {
-                    // variables to expand as absolute paths:
-                    String FILEPATH = Path.GetFullPath(file.Path);
-                    String FOLDERPATH = Path.GetFullPath(folder.Path);
-
-                    // executable:
-                    executable = executable.Replace("%FILEPATH%", FILEPATH).Replace("%FOLDERPATH%", FOLDERPATH);
-                    executable = Path.GetFullPath(executable);
-
-                    // parameters:
-                    // when none specified, use the selected file path:
-                    parameters = parameters ?? '"' + "%FILEPATH%" + '"';
-                    parameters = parameters.Replace("%FILEPATH%", FILEPATH).Replace("%FOLDERPATH%", FOLDERPATH);
-
-                    // working directory:
-                    // when none specified, use the executable folder:
-                    workingdirectory = workingdirectory ?? Path.GetDirectoryName(executable);
-                    workingdirectory = workingdirectory.Replace("%FILEPATH%", FILEPATH).Replace("%FOLDERPATH%", FOLDERPATH);
-                    workingdirectory = Path.GetFullPath(workingdirectory);
-
-                    // everything ok:
-                    psi = new ProcessStartInfo();
-                    psi.FileName = executable;
-                    psi.Arguments = parameters;
-                    psi.WorkingDirectory = workingdirectory;
-                }
-
-                catch (Exception exception)
-                {
-                    String text = String.Format(
-                        "Executable: \n" +
-                        "{0} \n\n" +
-                        "Parameters: \n" +
-                        "{1} \n\n" +
-                        "Working Directory: \n" +
-                        "{2} \n\n" +
-                        "Exception message: \n" +
-                        "{3}",
-                        executable,
-                        parameters ?? "<unspecified> (use file path)",
-                        workingdirectory ?? "<unspecified> (use executable folder)",
-                        exception.Message
-                    );
-
-                    String caption = "Error setting up process";
-                    MessageBox.Show(text, caption, MessageBoxButtons.OK);
-                }
-
-                // unable to fill it, bail out:
-                if (psi == null)
-                {
-                    return;
-                }
-
-                // step 2: run the process:
-                try
-                {
-                    Process process = Process.Start(psi);
-
-                    // Process.Start() returns null when reusing a process
-                    // http://stackoverflow.com/questions/3456383/process-start-returns-null
-                    if (process != null)
-                    {
-                        process.PriorityBoostEnabled = true;
-                        process.PriorityClass = ProcessPriorityClass.AboveNormal;
-                    }
-                }
-
-                catch (Exception exception)
-                {
-                    String text = String.Format(
-                        "Error executing: \n" +
-                        "{0} \n\n" +
-                        "Parameters: \n" +
-                        "{1} \n\n" +
-                        "Working Directory: \n" +
-                        "{2} \n\n" +
-                        "Exception message: \n" +
-                        "{3}",
-                        psi.FileName,
-                        psi.Arguments,
-                        psi.WorkingDirectory,
-                        exception.Message
-                    );
-
-                    String caption = "Error executing file";
-                    MessageBox.Show(text, caption);
-                }
+                ListViewFilesExecuteFile(file);
             }
         }
 
@@ -394,7 +410,7 @@ namespace Yava
         /// <summary>
         /// Open the folders file and parse the content
         /// adding each folder to the folders listview.
-        /// On errors, show a messagebox with details.
+        /// On errors, show a MessageBox with details.
         /// </summary>
         private void LoadFolders()
         {
@@ -472,7 +488,7 @@ namespace Yava
 
         /// <summary>
         /// Populate the files listview using the selected folders files.
-        /// On errors, show a messagebox with details.
+        /// On errors, show a MessageBox with details.
         /// </summary>
         private void LoadFiles()
         {
