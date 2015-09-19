@@ -8,3 +8,12 @@ including, but not limited to, copying, modification and redistribution.
 
 NO WARRANTY OF ANY KIND IS PROVIDED.
 
+
+As an exception, the following files:
+    </Source/Yava/Resouces/gnome-joystick.ico>
+    </Tools/gnome-joystick.svg>
+
+are distributed under the GNU Lesser General Public License
+because they are based on the GNOME version of Nuvola:
+    <http://ftp.gnome.org/pub/GNOME/sources/gnome-themes-extras/0.9/gnome-themes-extras-0.9.0.tar.gz>
+
