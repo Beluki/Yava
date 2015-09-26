@@ -562,7 +562,7 @@ namespace Yava
                 }
                 catch (Exception)
                 {
-                    
+
                 }
             }
         }
@@ -742,7 +742,7 @@ namespace Yava
         ///
 
         /// <summary>
-        /// When the form is closed, save settings.
+        /// When the form is closed, save settings, unhook hotkeys.
         /// </summary>
         private void OnFormClosing(Object sender, FormClosingEventArgs e)
         {
@@ -836,6 +836,7 @@ namespace Yava
                     break;
                 case Keys.Return:
                     ListViewFilesExecuteSelectedFile();
+                    e.Handled = true;
                     break;
             }
         }
@@ -843,7 +844,7 @@ namespace Yava
         ///
         /// Events: keyboard global hotkeys
         ///
- 
+
         /// <summary>
         /// Global keyboard hotkeys.
         /// </summary>
