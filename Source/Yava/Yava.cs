@@ -25,6 +25,7 @@ namespace Yava
 
         // settings:
         private readonly String settingsFilepath;
+        private readonly YavaSettings settings;
 
         // folders:
         private readonly String foldersFilepath;
@@ -32,7 +33,7 @@ namespace Yava
 
         // remembering selected folders and files:
         private String lastSelectedFolderName;
-        private Dictionary<String, FolderFile> folderNameToLastSelectedFile;
+        private Dictionary<String, String> folderNameToLastSelectedFilePath;
 
         /// <summary>
         /// Yava implementation.
@@ -49,7 +50,6 @@ namespace Yava
             this.DoubleBuffered = true;
             this.Icon = Util.ResourceAsIcon("Yava.Resources.gnome-joystick.ico");
             this.MinimumSize = new Size(640, 480);
-            this.ResizeEnd += OnResizeEnd;
             this.Text = "Yava Launcher";
 
             // gui components:
@@ -77,7 +77,6 @@ namespace Yava
 
             Splitter splitter = new Splitter();
             splitter.Dock = DockStyle.Left;
-            splitter.SplitterMoved += OnSplitterMoved;
 
             Controls.Add(filesListView);
             Controls.Add(splitter);
@@ -85,6 +84,7 @@ namespace Yava
 
             // settings:
             this.settingsFilepath = settingsFilepath;
+            this.settings = SettingsLoad();
 
             // folders:
             this.foldersFilepath = foldersFilepath;
@@ -92,7 +92,18 @@ namespace Yava
 
             // remembering selected folders and files:
             this.lastSelectedFolderName = null;
-            this.folderNameToLastSelectedFile = new Dictionary<String, FolderFile>();
+            this.folderNameToLastSelectedFilePath = new Dictionary<String, String>();
+
+            // apply settings before wiring events:
+            this.Width = settings.LastYavaFormWidth;
+            this.Height = settings.LastYavaFormHeight;
+            this.foldersListView.Width = settings.LastFoldersListViewWidth;
+            this.filesListView.Width = settings.LastFilesListViewWidth;
+            this.lastSelectedFolderName = settings.LastSelectedFolderName;
+            this.folderNameToLastSelectedFilePath = settings.FolderNameToLastSelectedFilePath;
+
+            // wire events - splitter:
+            splitter.SplitterMoved += OnSplitterMoved;
 
             // wire events - listviews:
             foldersListView.ItemSelectionChanged += OnFoldersListViewItemSelectionChanged;
@@ -105,8 +116,75 @@ namespace Yava
             // wire events - mouse:
             filesListView.MouseDoubleClick += OnFilesListViewMouseDoubleClick;
 
+            // wire events - form:
+            this.FormClosing += OnFormClosing;
+            this.ResizeEnd += OnResizeEnd;
+
             // load content:
             LoadContent();
+        }
+
+        ///
+        /// Settings file
+        ///
+
+        /// <summary>
+        /// Load the settings from our settings filepath if it exists.
+        /// Return default settings otherwise.
+        /// </summary>
+        private YavaSettings SettingsLoad()
+        {
+            try
+            {
+                if (File.Exists(settingsFilepath))
+                {
+                    return (YavaSettings) Util.Deserialize(settingsFilepath);
+                }
+            }
+            catch (Exception exception)
+            {
+                String text = String.Format(
+                    "Unable to load settings: \n" +
+                    "{0} \n\n" +
+                    "This usually means that the file is corrupt, empty \n" +
+                    "or incompatible with the current Yava version. \n\n" +
+                    "Exception message: \n" +
+                    "{1} \n",
+                    settingsFilepath,
+                    exception.Message
+                );
+
+                String caption = "Error loading settings file";
+                MessageBox.Show(text, caption);
+            }
+
+            // unable to load or doesn't exist, use defaults:
+            return new YavaSettings();
+        }
+
+        /// <summary>
+        /// Save the current settings.
+        /// </summary>
+        private void SettingsSave()
+        {
+            try
+            {
+                Util.Serialize(settings, settingsFilepath);
+            }
+            catch (Exception exception)
+            {
+                String text = String.Format(
+                    "Unable to save settings: \n" +
+                    "{0} \n\n" +
+                    "Exception message: \n" +
+                    "{1} \n",
+                    settingsFilepath,
+                    exception.Message
+                );
+
+                String caption = "Error saving settings file";
+                MessageBox.Show(text, caption);
+            }
         }
 
         ///
@@ -142,7 +220,7 @@ namespace Yava
         ///
 
         /// <summary>
-        /// Remember the current selected folder.
+        /// Remember the currently selected folder name.
         /// Used in combination with ListViewFoldersSelectLastSelectedFolder()
         /// to set the selected folder after reloading the listview.
         /// </summary>
@@ -192,7 +270,7 @@ namespace Yava
         }
 
         /// <summary>
-        /// Remember the current folder selected file.
+        /// Remember the current folder selected file path.
         /// Used in combination with ListViewFilesSelectLastSelectedFile()
         /// to set the selected file after reloading the listview.
         /// </summary>
@@ -208,12 +286,14 @@ namespace Yava
                 if (filesListView.SelectedItems.Count == 1)
                 {
                     FolderFile file = filesListView.SelectedItems[0].Tag as FolderFile;
-                    folderNameToLastSelectedFile[foldername] = file;
+                    String filepath = file.Path;
+
+                    folderNameToLastSelectedFilePath[foldername] = filepath;
                 }
                 else
                 {
                     // note: Dictionary.Remove(key) does nothing when the key is not found:
-                    folderNameToLastSelectedFile.Remove(foldername);
+                    folderNameToLastSelectedFilePath.Remove(foldername);
                 }
             }
         }
@@ -230,10 +310,9 @@ namespace Yava
                 Folder folder = foldersListView.SelectedItems[0].Tag as Folder;
                 String foldername = folder.Name;
 
-                if (folderNameToLastSelectedFile.ContainsKey(foldername))
+                if (folderNameToLastSelectedFilePath.ContainsKey(foldername))
                 {
-                    FolderFile file = folderNameToLastSelectedFile[foldername];
-                    String filepath = file.Path;
+                    String filepath = folderNameToLastSelectedFilePath[foldername];
 
                     // find the item:
                     foreach (ListViewItem item in filesListView.Items)
@@ -389,7 +468,7 @@ namespace Yava
 
                 String caption = "Error executing file";
                 MessageBox.Show(text, caption);
-            }           
+            }
         }
 
         /// <summary>
@@ -555,17 +634,8 @@ namespace Yava
         }
 
         ///
-        /// Events: resizing
+        /// Events: splitter
         ///
-
-        /// <summary>
-        /// When the form is resized, auto-resize the listviews.
-        /// </summary>
-        private void OnResizeEnd(Object sender, EventArgs e)
-        {
-            ListViewFoldersResize();
-            ListViewFilesResize();
-        }
 
         /// <summary>
         /// When the spliiter is moved, auto-resize the listviews.
@@ -650,6 +720,34 @@ namespace Yava
             {
                 ListViewFilesExecuteSelectedFile();
             }
+        }
+
+        ///
+        /// Events: form
+        ///
+
+        /// <summary>
+        /// When the form is closed, save settings.
+        /// </summary>
+        private void OnFormClosing(Object sender, FormClosingEventArgs e)
+        {
+            settings.LastYavaFormWidth = this.Width;
+            settings.LastYavaFormHeight = this.Height;
+            settings.LastFoldersListViewWidth = foldersListView.Width;
+            settings.LastFilesListViewWidth = filesListView.Width;
+            settings.LastSelectedFolderName = this.lastSelectedFolderName;
+            settings.FolderNameToLastSelectedFilePath = this.folderNameToLastSelectedFilePath;
+
+            SettingsSave();
+        }
+
+        /// <summary>
+        /// When the form is resized, auto-resize the listviews.
+        /// </summary>
+        private void OnResizeEnd(Object sender, EventArgs e)
+        {
+            ListViewFoldersResize();
+            ListViewFilesResize();
         }
     }
 }

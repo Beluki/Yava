@@ -7,6 +7,8 @@ using System;
 using System.Drawing;
 using System.IO;
 using System.Reflection;
+using System.Runtime.Serialization;
+using System.Runtime.Serialization.Formatters.Binary;
 using System.Windows.Forms;
 
 
@@ -14,6 +16,37 @@ namespace Yava
 {
     internal static class Util
     {
+        ///
+        /// IO
+        ///
+
+        /// <summary>
+        /// Serialize an object to a binary file.
+        /// </summary>
+        /// <param name="value">Object to serialize.</param>
+        /// <param name="filepath">Destination path.</param>
+        public static void Serialize(Object value, String filepath)
+        {
+            BinaryFormatter formatter = new BinaryFormatter();
+            using (FileStream fs = new FileStream(filepath, FileMode.OpenOrCreate, FileAccess.Write))
+            {
+                formatter.Serialize(fs, value);
+            }
+        }
+
+        /// <summary>
+        /// Deserialize an object from a binary file.
+        /// </summary>
+        /// <param name="filepath">File path.</param>
+        public static Object Deserialize(String filepath)
+        {
+            BinaryFormatter formatter = new BinaryFormatter();
+            using (FileStream fs = new FileStream(filepath, FileMode.Open, FileAccess.Read))
+            {
+                return formatter.Deserialize(fs);
+            }
+        }
+
         ///
         /// MessageBoxes
         ///
