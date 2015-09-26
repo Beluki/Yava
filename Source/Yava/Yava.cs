@@ -13,6 +13,8 @@ using System.Windows.Forms;
 using Yava.Controls;
 using Yava.FoldersFile;
 
+using LowKey;
+
 
 namespace Yava
 {
@@ -35,6 +37,9 @@ namespace Yava
         private String lastSelectedFolderName;
         private Dictionary<String, String> folderNameToLastSelectedFilePath;
 
+        // executing files:
+        private Process currentFileProcess;
+
         /// <summary>
         /// Yava implementation.
         /// </summary>
@@ -46,7 +51,7 @@ namespace Yava
         /// </param>
         public Yava(String settingsFilepath, String foldersFilepath)
         {
-            // this form:
+            // form:
             this.DoubleBuffered = true;
             this.Icon = Util.ResourceAsIcon("Yava.Resources.gnome-joystick.ico");
             this.MinimumSize = new Size(640, 480);
@@ -94,6 +99,9 @@ namespace Yava
             this.lastSelectedFolderName = null;
             this.folderNameToLastSelectedFilePath = new Dictionary<String, String>();
 
+            // executing files:
+            this.currentFileProcess = null;
+
             // apply settings before wiring events:
             this.Width = settings.LastYavaFormWidth;
             this.Height = settings.LastYavaFormHeight;
@@ -102,26 +110,33 @@ namespace Yava
             this.lastSelectedFolderName = settings.LastSelectedFolderName;
             this.folderNameToLastSelectedFilePath = settings.FolderNameToLastSelectedFilePath;
 
-            // wire events - splitter:
-            splitter.SplitterMoved += OnSplitterMoved;
+            // wire events - form:
+            this.FormClosing += OnFormClosing;
+            this.ResizeEnd += OnResizeEnd;
 
             // wire events - listviews:
             foldersListView.ItemSelectionChanged += OnFoldersListViewItemSelectionChanged;
             filesListView.ItemSelectionChanged += OnFilesListViewItemSelectionChanged;
 
+            // wire events - splitter:
+            splitter.SplitterMoved += OnSplitterMoved;
+
             // wire events - keyboard:
             foldersListView.KeyDown += OnFoldersListViewKeyDown;
             filesListView.KeyDown += OnFilesListViewKeyDown;
 
+            // wire events - keyboard global hotkeys:
+            KeyboardHook.Hooker.Add("Kill Process", Keys.K, Keys.Control | Keys.Shift);
+            KeyboardHook.Hooker.Add("Close Process", Keys.C, Keys.Control | Keys.Shift);
+            KeyboardHook.Hooker.HotkeyDown += OnHotkeyDown;
+
             // wire events - mouse:
             filesListView.MouseDoubleClick += OnFilesListViewMouseDoubleClick;
 
-            // wire events - form:
-            this.FormClosing += OnFormClosing;
-            this.ResizeEnd += OnResizeEnd;
-
-            // load content:
+            // initialize content and hotkeys
+            // (both can raise exceptions, appropriate messageboxes will be displayed):
             LoadContent();
+            GlobalHotkeysHook();
         }
 
         ///
@@ -188,6 +203,48 @@ namespace Yava
         }
 
         ///
+        /// Global hotkeys hooking
+        ///
+
+        /// <summary>
+        /// Start the global hotkeys hook.
+        /// </summary>
+        private void GlobalHotkeysHook()
+        {
+            try
+            {
+                KeyboardHook.Hooker.Hook();
+            }
+            catch (KeyboardHookException exception)
+            {
+                String text = exception.Message;
+                String caption = "Error hooking global hotkeys";
+                MessageBox.Show(text, caption, MessageBoxButtons.OK);
+            }
+        }
+
+        /// <summary>
+        /// Stop the global hotkeys hook.
+        /// </summary>
+        /// <param name="quiet">Ignore exceptions instead of showing a message.</param>
+        private void GlobalHotkeysUnhook(Boolean quiet = false)
+        {
+            try
+            {
+                KeyboardHook.Hooker.Unhook();
+            }
+            catch (KeyboardHookException exception)
+            {
+                if (!quiet)
+                {
+                    String text = exception.Message;
+                    String caption = "Error unhooking global hotkeys";
+                    MessageBox.Show(text, caption, MessageBoxButtons.OK);
+                }
+            }
+        }
+
+        ///
         /// Updating listviews
         ///
 
@@ -216,7 +273,7 @@ namespace Yava
         }
 
         ///
-        /// Remembering selected items
+        /// Remembering selected items in both listviews
         ///
 
         /// <summary>
@@ -363,6 +420,12 @@ namespace Yava
         /// <param name="file">File to execute.</param>
         private void ListViewFilesExecuteFile(FolderFile file)
         {
+            // bail out if there's a file already running:
+            if ((currentFileProcess != null) && (!currentFileProcess.HasExited))
+            {
+                return;
+            }
+
             Folder folder = file.Folder;
 
             // step 1: fill the startup information:
@@ -442,8 +505,9 @@ namespace Yava
                 // when reusing a process:
                 if (process != null)
                 {
-                    process.PriorityBoostEnabled = true;
-                    process.PriorityClass = ProcessPriorityClass.AboveNormal;
+                    currentFileProcess = process;
+                    currentFileProcess.PriorityBoostEnabled = true;
+                    currentFileProcess.PriorityClass = ProcessPriorityClass.AboveNormal;
                 }
             }
 
@@ -480,6 +544,46 @@ namespace Yava
             {
                 FolderFile file = filesListView.SelectedItems[0].Tag as FolderFile;
                 ListViewFilesExecuteFile(file);
+            }
+        }
+
+        /// <summary>
+        /// Try closing the current file process by sending a close message
+        /// to its main window. Do nothing if there is no process running
+        /// or it can't be closed.
+        /// </summary>
+        private void TryClosingCurrentFileProcess()
+        {
+            if ((currentFileProcess != null) && (!currentFileProcess.HasExited))
+            {
+                try
+                {
+                    currentFileProcess.CloseMainWindow();
+                }
+                catch (Exception)
+                {
+                    
+                }
+            }
+        }
+
+        /// <summary>
+        /// Try to kill the current file process immediately.
+        /// Do nothing if there is no process running
+        /// or it can't be killed.
+        /// </summary>
+        private void TryKillingCurrentFileProcess()
+        {
+            if ((currentFileProcess != null) && (!currentFileProcess.HasExited))
+            {
+                try
+                {
+                    currentFileProcess.Kill();
+                }
+                catch (Exception)
+                {
+
+                }
             }
         }
 
@@ -634,13 +738,29 @@ namespace Yava
         }
 
         ///
-        /// Events: splitter
+        /// Events: form
         ///
 
         /// <summary>
-        /// When the spliiter is moved, auto-resize the listviews.
+        /// When the form is closed, save settings.
         /// </summary>
-        private void OnSplitterMoved(Object sender, EventArgs e)
+        private void OnFormClosing(Object sender, FormClosingEventArgs e)
+        {
+            settings.LastYavaFormWidth = this.Width;
+            settings.LastYavaFormHeight = this.Height;
+            settings.LastFoldersListViewWidth = foldersListView.Width;
+            settings.LastFilesListViewWidth = filesListView.Width;
+            settings.LastSelectedFolderName = this.lastSelectedFolderName;
+            settings.FolderNameToLastSelectedFilePath = this.folderNameToLastSelectedFilePath;
+
+            SettingsSave();
+            GlobalHotkeysUnhook(true);
+        }
+
+        /// <summary>
+        /// When the form is resized, auto-resize the listviews.
+        /// </summary>
+        private void OnResizeEnd(Object sender, EventArgs e)
         {
             ListViewFoldersResize();
             ListViewFilesResize();
@@ -668,6 +788,19 @@ namespace Yava
         private void OnFilesListViewItemSelectionChanged(Object sender, ListViewItemSelectionChangedEventArgs e)
         {
             ListViewFilesRememberSelectedFile();
+        }
+
+        ///
+        /// Events: splitter
+        ///
+
+        /// <summary>
+        /// When the spliiter is moved, auto-resize the listviews.
+        /// </summary>
+        private void OnSplitterMoved(Object sender, EventArgs e)
+        {
+            ListViewFoldersResize();
+            ListViewFilesResize();
         }
 
         ///
@@ -708,6 +841,27 @@ namespace Yava
         }
 
         ///
+        /// Events: keyboard global hotkeys
+        ///
+ 
+        /// <summary>
+        /// Global keyboard hotkeys.
+        /// </summary>
+        private void OnHotkeyDown(Object sender, KeyboardHookEventArgs e)
+        {
+            switch (e.Name)
+            {
+                case "Kill Process":
+                    TryKillingCurrentFileProcess();
+                    break;
+
+                case "Close Process":
+                    TryClosingCurrentFileProcess();
+                    break;
+            }
+        }
+
+        ///
         /// Events: mouse
         ///
 
@@ -720,34 +874,6 @@ namespace Yava
             {
                 ListViewFilesExecuteSelectedFile();
             }
-        }
-
-        ///
-        /// Events: form
-        ///
-
-        /// <summary>
-        /// When the form is closed, save settings.
-        /// </summary>
-        private void OnFormClosing(Object sender, FormClosingEventArgs e)
-        {
-            settings.LastYavaFormWidth = this.Width;
-            settings.LastYavaFormHeight = this.Height;
-            settings.LastFoldersListViewWidth = foldersListView.Width;
-            settings.LastFilesListViewWidth = filesListView.Width;
-            settings.LastSelectedFolderName = this.lastSelectedFolderName;
-            settings.FolderNameToLastSelectedFilePath = this.folderNameToLastSelectedFilePath;
-
-            SettingsSave();
-        }
-
-        /// <summary>
-        /// When the form is resized, auto-resize the listviews.
-        /// </summary>
-        private void OnResizeEnd(Object sender, EventArgs e)
-        {
-            ListViewFoldersResize();
-            ListViewFilesResize();
         }
     }
 }

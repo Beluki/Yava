@@ -65,6 +65,7 @@
     <Reference Include="System" />
     <Reference Include="System.Drawing" />
     <Reference Include="System.Windows.Forms" />
+    <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Assembly\AssemblyInfo.cs" />
@@ -74,6 +75,7 @@
     <Compile Include="FoldersFile\FoldersFileReader.cs" />
     <Compile Include="FoldersFile\FoldersFileReaderFolder.cs" />
     <Compile Include="FoldersFile\FoldersFileReadError.cs" />
+    <Compile Include="Libraries\LowKey\LowKey.cs" />
     <Compile Include="Libraries\mINI\mINI.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Util.cs" />
