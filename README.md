@@ -66,8 +66,8 @@ Here are all the available specifications for a section:
    Optional: Yava will use the same folder where the executable is located by default.
 
 All the paths can be either absolute or relative.
-When specifying `executable`, `parameters` and `workingdirectory`, you can use %FILEPATH%
-and %FOLDERPATH% to refer to the current file being launched and the folder it belongs to
+When specifying `executable`, `parameters` and `workingdirectory`, you can use `%FILEPATH%`
+and `%FOLDERPATH%` to refer to the current file being launched and the folder it belongs to
 respectively.
 
 Here is a more complete example, for the Dolphin emulator:
