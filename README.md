@@ -57,10 +57,10 @@ Here are all the available specifications for a section:
 * `executable`: what program to use to launch the files. Required.
 
 * `extensions`: a list of extensions to filter the files with, comma separated.
-   Optional (Yava will display all files by default). Example: zip, 7z, smc
+   Optional (Yava will display all files by default). Example: `zip, 7z, smc`
 
 * `parameters`: additional command-line arguments to add to the executable.
-   Optional: "%FILEPATH%" by default. Example: "%FILEPATH%" --video fullscreen
+   Optional: `"%FILEPATH%"` by default. Example: `"%FILEPATH%" --video fullscreen`
 
 * `workingdirectory`: the startup path for the executable.
    Optional: Yava will use the same folder where the executable is located by default.
