@@ -13,13 +13,13 @@ Features:
 
 * Simple, fast, lightweight, robust.
 
-* Easy to configure through an ini file. The file can be reloaded from the GUI.
+* Easy to configure through an INI file. The file can be reloaded from the GUI.
 
 * It doesn't try manage your roms or impose any particular organization.
   In fact, it doesn't even keep an internal database, just uses folders and files.
 
 * It can launch anything, with any command-line parameters. Emulators tested
-  include Bizhawk, DesMuMe, Dolphin, Fceux, Kega, Mame, DosBox...
+  include Bizhawk, DesMuMe, Dolphin, Fceux, Kega, Mame, PCSX2, DosBox...
 
 * Provides hotkeys to close the launched emulators, both properly and forcefully.
 
@@ -52,12 +52,12 @@ Each section in the INI file represents a folder in Yava's left panel.
 
 Here are all the available specifications for a section:
 
-* `path`: where the files for this folder are located in the filesystem. Required.
+* `path`: Where the files for this folder are located in the filesystem. Required.
 
-* `executable`: what program to use to launch the files. Required.
+* `executable`: What program to use to launch the files. Required.
 
-* `extensions`: a list of extensions to filter the files with, comma separated.
-   Optional (Yava will display all files by default). Example: `zip, 7z, smc`
+* `extensions`: A comma-separated list of extensions to filter the files with.
+   Optional: Yava will display all files by default. Example: `zip, 7z, smc`
 
 * `parameters`: additional command-line arguments to add to the executable.
    Optional: `"%FILEPATH%"` by default. Example: `"%FILEPATH%" --video fullscreen`
@@ -66,6 +66,7 @@ Here are all the available specifications for a section:
    Optional: Yava will use the same folder where the executable is located by default.
 
 All the paths can be either absolute or relative.
+
 When specifying `executable`, `parameters` and `workingdirectory`, you can use `%FILEPATH%`
 and `%FOLDERPATH%` to refer to the current file being launched and the folder it belongs to
 respectively.
