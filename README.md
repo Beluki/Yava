@@ -7,7 +7,7 @@ can put Yava and all your emulators/roms in a usb key and carry them anywhere.
 
 Here is a screenshot:
 
-![Screenshot1](https://raw.github.com/Beluki/Yava/master/Screenshot/Screenshot1.png)
+![Screenshot1](Screenshot/Screenshot1.png)
 
 Features:
 
@@ -59,7 +59,7 @@ Here are all the available specifications for a section:
 * `extensions`: A comma-separated list of extensions to filter the files with.
    Optional: Yava will display all files by default. Example: `zip, 7z, smc`
 
-* `parameters`: additional command-line arguments to add to the executable.
+* `parameters`: Additional command-line arguments to add to the executable.
    Optional: `"%FILEPATH%"` by default. Example: `"%FILEPATH%" --video fullscreen`
 
 * `workingdirectory`: the startup path for the executable.
@@ -81,10 +81,11 @@ parameters = --batch --exec "%FILEPATH%"
 extensions = iso, wbfs
 ```
 
-A complete Folders.ini (the one I use) is available in the [Extra][] folder
+A complete [Folders.ini][] (the one I use) is available in the [Extra][] folder
 in the repository.
 
-[Extra]: https://github.com/Beluki/Yava/tree/master/Extra
+[Folders.ini]: Extra/Folders.ini
+[Extra]: Extra
 
 ## Compiling and installation
 
@@ -142,5 +143,5 @@ I plan no further development on it other than maintenance.
 Like all my hobby projects, this is Free Software. See the [Documentation][]
 folder for more information. No warranty though.
 
-[Documentation]: https://github.com/Beluki/Yava/tree/master/Documentation
+[Documentation]: Documentation
 

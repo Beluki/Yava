@@ -1,6 +1,10 @@
 
 CHANGELOG
 
+* 2016/02/04:
+
+    - Revised. Working on VS2015 Community Edition and latest .NET Framework.
+
 * 2015/09/28:
 
     - First complete version.
